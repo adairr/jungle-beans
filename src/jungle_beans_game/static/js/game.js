@@ -167,23 +167,71 @@ function renderMapDots() {
     if (a.code === selectedAirport) classes.push("selected");
     g.setAttribute("class", classes.join(" "));
     g.setAttribute("data-code", a.code);
+
+    // Oversized invisible circle so the hover target is easier to hit than
+    // the small visible dot.
+    const hitArea = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    hitArea.setAttribute("cx", x);
+    hitArea.setAttribute("cy", y);
+    hitArea.setAttribute("r", 14);
+    hitArea.setAttribute("fill", "transparent");
+
     const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     circle.setAttribute("cx", x);
     circle.setAttribute("cy", y);
     circle.setAttribute("r", a.code === state.location ? 7 : 5);
     circle.setAttribute("fill", a.code === selectedAirport ? "#ff8a4c" : "#4a90d9");
+
     const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
     label.setAttribute("x", x + 8);
     label.setAttribute("y", y + 3);
     label.textContent = a.code;
+
+    g.appendChild(hitArea);
     g.appendChild(circle);
     g.appendChild(label);
     g.addEventListener("click", () => {
       selectedAirport = a.code;
       render();
     });
+    g.addEventListener("mouseenter", (evt) => showMapTooltip(a, evt));
+    g.addEventListener("mousemove", positionMapTooltip);
+    g.addEventListener("mouseleave", hideMapTooltip);
     svg.appendChild(g);
   });
+}
+
+function showMapTooltip(airport, evt) {
+  const prices = state.airport_prices[airport.code] || {};
+  const rows = state.products
+    .map((p) => {
+      if (!p.unlocked) {
+        return `<div class="tooltip-row locked"><span>${p.name}</span><span>Lvl ${p.unlock_level}</span></div>`;
+      }
+      const price = prices[p.key];
+      return `<div class="tooltip-row"><span>${p.name}</span><span>$${price.toLocaleString()}</span></div>`;
+    })
+    .join("");
+  const tooltip = $("map-tooltip");
+  tooltip.innerHTML = `<span class="tooltip-title">${airport.name}</span>${rows}`;
+  tooltip.classList.remove("hidden");
+  positionMapTooltip(evt);
+}
+
+function positionMapTooltip(evt) {
+  const tooltip = $("map-tooltip");
+  if (tooltip.classList.contains("hidden")) return;
+  const panelRect = $("world-map").closest(".map-panel").getBoundingClientRect();
+  let left = evt.clientX - panelRect.left + 14;
+  let top = evt.clientY - panelRect.top + 14;
+  const maxLeft = panelRect.width - tooltip.offsetWidth - 6;
+  const maxTop = panelRect.height - tooltip.offsetHeight - 6;
+  tooltip.style.left = `${Math.max(6, Math.min(left, maxLeft))}px`;
+  tooltip.style.top = `${Math.max(6, Math.min(top, maxTop))}px`;
+}
+
+function hideMapTooltip() {
+  $("map-tooltip").classList.add("hidden");
 }
 
 function animatePlane(originCode, destCode) {

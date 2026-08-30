@@ -110,6 +110,17 @@ EVENTS: list[dict] = [
 
 EVENT_CHANCE_PER_SALE = 0.12
 
+# Sell orders execute at a discount to the listed market price (a bid/ask
+# spread). Without this, buying and immediately reselling the same product
+# at the same airport is a risk-free wash — a player (or a bot) can rack up
+# pure-downside bust risk for zero expected reward. The spread makes local
+# flipping a guaranteed small loss, so real profit has to come from actually
+# traveling to a better market or waiting out a price swing.
+SELL_SPREAD_PCT = 0.10
+
+AIRFARE_BASE_FEE = 75
+AIRFARE_PER_KM = 0.06
+
 STARTING_CASH = 5000
 STARTING_LIFE = 10  # half-heart units; 10 == 5 full hearts
 SALES_PER_DAY = 3

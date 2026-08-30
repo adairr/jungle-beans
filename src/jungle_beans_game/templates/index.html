@@ -32,6 +32,7 @@
 
     <div class="panel market-panel">
       <h2>Market Prices:</h2>
+      <p class="market-subtitle">Listed price to buy. Selling nets ~{{ sell_pct }}% (dealer's cut).</p>
       <table class="market-table">
         <thead>
           <tr><th>Product</th><th>Price</th><th>Own</th><th>Qty</th><th></th></tr>
@@ -42,6 +43,7 @@
 
     <div class="panel map-panel">
       <svg id="world-map" viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid meet"></svg>
+      <div id="map-tooltip" class="map-tooltip hidden"></div>
     </div>
 
     <div class="panel wallet-panel">

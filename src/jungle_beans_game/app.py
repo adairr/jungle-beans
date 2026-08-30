@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from flask import Flask, jsonify, render_template, request
 
+from . import data
 from .engine import GameState
 
 app = Flask(__name__)
@@ -12,7 +13,8 @@ GAME = GameState()
 
 @app.get("/")
 def index():
-    return render_template("index.html")
+    sell_pct = round(100 * (1 - data.SELL_SPREAD_PCT))
+    return render_template("index.html", sell_pct=sell_pct)
 
 
 @app.get("/api/state")

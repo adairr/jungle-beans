@@ -26,7 +26,8 @@ def airfare(origin_code: str, dest_code: str) -> int:
     origin = data.AIRPORT_BY_CODE[origin_code]
     dest = data.AIRPORT_BY_CODE[dest_code]
     km = _haversine_km(origin, dest)
-    return int(round(75 + km * 0.06, -1))  # rounded to nearest $10
+    fare = data.AIRFARE_BASE_FEE + km * data.AIRFARE_PER_KM
+    return int(round(fare, -1))  # rounded to nearest $10
 
 
 class GameState:
@@ -148,7 +149,7 @@ class GameState:
             self._resolve_event(event, product_key)
         else:
             price = self.current_price(self.location, product_key)
-            revenue = price * qty
+            revenue = int(round(price * qty * (1 - data.SELL_SPREAD_PCT)))
             self.inventory[product_key] -= qty
             self.cash += revenue
             old_level = self.level
@@ -329,6 +330,7 @@ class GameState:
                     "owned": self.inventory.get(p.key, 0),
                 }
             )
+        airport_prices = {a.code: self.prices_at(a.code) for a in data.AIRPORTS}
         return {
             "cash": self.cash,
             "debt": self.debt,
@@ -342,6 +344,7 @@ class GameState:
             "net_worth": self.net_worth(),
             "airports": airports,
             "products": products,
+            "airport_prices": airport_prices,
             "notices": self.notices[:20],
             "game_over": self.game_over,
             "win": self.win,

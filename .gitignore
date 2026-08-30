@@ -11,3 +11,9 @@ wheels/
 
 # Local save games
 saves/
+
+# macOS
+.DS_Store
+
+# Simulator output redirected to a file
+results*.txt

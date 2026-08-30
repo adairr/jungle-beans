@@ -39,6 +39,19 @@ AIRPORT_BY_CODE: dict[str, Airport] = {a.code: a for a in AIRPORTS}
 
 HOME_AIRPORT = "GRU"
 
+# Regional clusters get a cheap, randomly-rolled short-hop fare instead of
+# the usual distance-based airfare — real regional carriers undercut a
+# long-haul pricing formula for nearby city-pairs. Rolled fresh each new
+# game (see GameState.new_game), capped under $200. GRU/South America isn't
+# part of a cluster — every route to or from it stays on the normal formula.
+AIRPORT_CLUSTERS: list[frozenset[str]] = [
+    frozenset({"DEN", "ORD", "DFW", "ATL"}),  # North America
+    frozenset({"LHR", "IST", "DXB"}),  # Europe / Middle East
+    frozenset({"HND", "PVG"}),  # Asia
+]
+REGIONAL_FARE_MIN = 50
+REGIONAL_FARE_MAX = 190
+
 PRODUCTS: list[Product] = [
     Product("raw_bean", "Raw Bean", 50, 1),
     Product("bean_beverage", "Bean Beverage", 75, 1),

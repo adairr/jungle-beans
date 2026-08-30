@@ -24,7 +24,7 @@ import statistics
 from typing import Iterator
 
 from . import data
-from .engine import GameState, airfare
+from .engine import GameState
 
 MAX_DAYS = 200
 MAX_STEPS = MAX_DAYS * 6  # safety net so a stuck bot can't spin forever
@@ -105,7 +105,7 @@ def best_opportunity(game: GameState) -> tuple[str, int, str] | None:
             margin_per_unit = net_sell - buy_price
             if margin_per_unit <= 0:
                 continue
-            fare = 0 if a.code == game.location else airfare(game.location, a.code)
+            fare = 0 if a.code == game.location else game.fare_to(a.code)
             budget = max(0, game.cash - reserve - fare)
             qty = int(budget // buy_price)
             if qty <= 0:
@@ -140,7 +140,7 @@ def mop_up_target(game: GameState) -> str | None:
     ]
     if not uncovered:
         return None
-    uncovered.sort(key=lambda code: 0 if code == game.location else airfare(game.location, code))
+    uncovered.sort(key=lambda code: 0 if code == game.location else game.fare_to(code))
     return uncovered[0]
 
 

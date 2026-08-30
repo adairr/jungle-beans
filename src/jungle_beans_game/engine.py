@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import itertools
 import json
 import math
 import random
@@ -76,8 +77,23 @@ class GameState:
         self.shock: dict[str, float] = {}
         self._apply_shock()
 
+        # Cheap regional short-hops, rolled fresh this game.
+        self.regional_fare: dict[str, int] = self._roll_regional_fares()
+
         self._log(f"Touched down in {data.AIRPORT_BY_CODE[self.location].name} with "
                    f"${self.cash:,} and a bag full of hope. Day 0.")
+
+    @staticmethod
+    def _roll_regional_fares() -> dict[str, int]:
+        """Random discounted fare per intra-cluster airport pair, keyed by
+        the pair's codes sorted and joined ("ATL-DEN") so it round-trips
+        through JSON save files without needing a custom encoder."""
+        fares: dict[str, int] = {}
+        for cluster in data.AIRPORT_CLUSTERS:
+            for a, b in itertools.combinations(sorted(cluster), 2):
+                fare = random.randint(data.REGIONAL_FARE_MIN, data.REGIONAL_FARE_MAX)
+                fares[f"{a}-{b}"] = int(round(fare, -1))
+        return fares
 
     def _apply_shock(self) -> None:
         self.shock = {}
@@ -105,6 +121,15 @@ class GameState:
 
     def prices_at(self, airport_code: str) -> dict[str, int]:
         return {p.key: self.current_price(airport_code, p.key) for p in data.PRODUCTS}
+
+    def fare_to(self, dest_code: str) -> int:
+        """Airfare from the current location to dest_code — the discounted
+        regional short-hop rate if this pair rolled one, else the normal
+        distance-based fare."""
+        key = "-".join(sorted((self.location, dest_code)))
+        if key in self.regional_fare:
+            return self.regional_fare[key]
+        return airfare(self.location, dest_code)
 
     def heat_faces(self, airport_code: str) -> int:
         """How many faces of a d12 count as a "challenge" roll at this airport.
@@ -251,7 +276,7 @@ class GameState:
             return {"ok": False, "error": "Unknown airport."}
         if dest_code == self.location:
             return {"ok": False, "error": "You're already there."}
-        cost = airfare(self.location, dest_code)
+        cost = self.fare_to(dest_code)
         if cost > self.cash:
             return {"ok": False, "error": f"Airfare to {data.AIRPORT_BY_CODE[dest_code].name} is ${cost:,} — you can't afford it."}
         self.cash -= cost
@@ -339,6 +364,7 @@ class GameState:
             "airport_modifier": self.airport_modifier,
             "drift": self.drift,
             "shock": self.shock,
+            "regional_fare": self.regional_fare,
             "saved_at": datetime.now(timezone.utc).isoformat(),
         }
 
@@ -363,6 +389,7 @@ class GameState:
         state.airport_modifier = payload["airport_modifier"]
         state.drift = payload["drift"]
         state.shock = payload["shock"]
+        state.regional_fare = payload.get("regional_fare") or cls._roll_regional_fares()
         return state
 
     def save(self, name: str) -> str:
@@ -398,7 +425,7 @@ class GameState:
                     "lat": a.lat,
                     "lon": a.lon,
                     "is_current": a.code == self.location,
-                    "airfare": None if a.code == self.location else airfare(self.location, a.code),
+                    "airfare": None if a.code == self.location else self.fare_to(a.code),
                     "heat": self.heat_faces(a.code),
                     "heat_max": data.DICE_SIDES,
                     "sold_here": self.sales_by_airport.get(a.code, 0),

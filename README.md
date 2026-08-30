@@ -23,6 +23,11 @@ Then open http://127.0.0.1:5050 in Chrome, Safari, or Edge.
   GRU is always the deepest discount in the game (it's the source region,
   right at the Amazon), so it's the best place to stock up on Raw Bean and
   Bean Beverage early.
+- Three regional clusters — North America (ATL/DFW/DEN/ORD), Europe/Middle
+  East (LHR/IST/DXB), Asia (HND/PVG) — get a cheap short-hop fare between
+  any two airports in the same cluster, randomly rolled once per game and
+  always under $200 (`REGIONAL_FARE_MIN`/`MAX` in `data.py`), instead of the
+  usual distance-based airfare. GRU/South America isn't part of a cluster.
 - **Buy** beans cheap from the Market Prices panel, **Travel** to another
   airport, then **Attempt Sale** to cash in at a better price. Selling nets
   ~90% of the listed price (a dealer's cut) — buying and instantly reselling

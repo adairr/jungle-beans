@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Jungle Beans</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
 </head>
 <body>
@@ -42,8 +43,7 @@
     </div>
 
     <div class="panel map-panel">
-      <svg id="world-map" viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid meet"></svg>
-      <div id="map-tooltip" class="map-tooltip hidden"></div>
+      <div id="world-map"></div>
     </div>
 
     <div class="panel wallet-panel">
@@ -91,6 +91,7 @@
     </div>
   </div>
 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="{{ url_for('static', filename='js/game.js') }}"></script>
 </body>
 </html>

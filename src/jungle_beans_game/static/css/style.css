@@ -145,44 +145,33 @@ button, select, input {
   cursor: pointer;
 }
 
-#world-map { width: 100%; height: 100%; background: var(--sky); border-radius: 2px; }
-.continent { fill: var(--cream); stroke: #cfc9ad; stroke-width: 1; }
-.airport-dot { cursor: pointer; }
-.airport-dot circle { stroke: var(--maroon); stroke-width: 1.5; }
-.airport-dot.current circle { fill: var(--yellow); r: 7; }
-.airport-dot.selected circle { fill: #ff8a4c; }
-.airport-dot text {
-  font-size: 11px;
-  font-weight: bold;
-  fill: var(--ink);
-  pointer-events: none;
-}
-.travel-line { stroke: var(--maroon); stroke-width: 2; stroke-dasharray: 5 4; fill: none; }
-.travel-plane {
-  fill: #ff5a3c;
-  stroke: var(--maroon);
-  stroke-width: 1;
+#world-map {
+  width: 100%;
+  height: 100%;
+  border-radius: 2px;
+  border: 1px solid var(--maroon);
 }
 
-.map-tooltip {
-  position: absolute;
-  pointer-events: none;
+/* Leaflet's default popup/tooltip chrome, retheme to match the dashboard. */
+.leaflet-popup-content-wrapper,
+.leaflet-tooltip {
   background: var(--cream);
   border: 2px solid var(--maroon);
   border-radius: 3px;
-  padding: 6px 9px;
-  font-size: 0.78rem;
-  font-style: normal;
-  font-weight: normal;
-  line-height: 1.4;
-  min-width: 140px;
-  z-index: 10;
+  color: var(--ink);
   box-shadow: 2px 2px 0 rgba(0,0,0,0.25);
 }
-.map-tooltip.hidden { display: none; }
-.map-tooltip .tooltip-title { font-style: italic; font-weight: 800; display: block; margin-bottom: 3px; }
-.map-tooltip .tooltip-row { display: flex; justify-content: space-between; gap: 10px; }
-.map-tooltip .tooltip-row.locked { opacity: 0.55; }
+.leaflet-tooltip-top:before,
+.leaflet-tooltip-bottom:before,
+.leaflet-tooltip-left:before,
+.leaflet-tooltip-right:before { border-top-color: var(--maroon); }
+.leaflet-popup-tip { background: var(--cream); }
+.leaflet-container { font-family: inherit; }
+
+.airport-tooltip { font-size: 0.78rem; font-style: normal; line-height: 1.4; min-width: 140px; }
+.airport-tooltip .tooltip-title { font-style: italic; font-weight: 800; display: block; margin-bottom: 3px; }
+.airport-tooltip .tooltip-row { display: flex; justify-content: space-between; gap: 10px; }
+.airport-tooltip .tooltip-row.locked { opacity: 0.55; }
 
 .life-hearts { display: flex; gap: 4px; }
 

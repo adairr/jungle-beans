@@ -15,7 +15,9 @@ Requires [uv](https://docs.astral.sh/uv/).
 uv run python -m jungle_beans_game.app
 ```
 
-Then open http://127.0.0.1:5050 in Chrome, Safari, or Edge.
+Then open http://127.0.0.1:5050 in Chrome, Safari, or Edge. The map tiles
+load live from OpenStreetMap, so an internet connection is needed for the
+map to render (everything else works fully offline).
 
 ## Gameplay notes
 
@@ -23,6 +25,12 @@ Then open http://127.0.0.1:5050 in Chrome, Safari, or Edge.
   GRU is always the deepest discount in the game (it's the source region,
   right at the Amazon), so it's the best place to stock up on Raw Bean and
   Bean Beverage early.
+- The map is a real, pannable/zoomable [Leaflet](https://leafletjs.com/)
+  map on an [OpenStreetMap](https://www.openstreetmap.org/) basemap, with
+  each airport plotted at its actual latitude/longitude. Hover a marker for
+  a price/heat tooltip, click one to select it as a travel target (draws a
+  dashed line from your current location), and watch the plane animate
+  along the great-circle-ish path on Travel.
 - Three regional clusters — North America (ATL/DFW/DEN/ORD), Europe/Middle
   East (LHR/IST/DXB), Asia (HND/PVG) — get a cheap short-hop fare between
   any two airports in the same cluster, randomly rolled once per game and

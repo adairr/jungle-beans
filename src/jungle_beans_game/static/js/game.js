@@ -32,11 +32,19 @@ async function api(path, body) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body || {}),
   });
+  if (res.status === 401) {
+    window.location.href = "/";
+    return new Promise(() => {}); // navigation is in flight; don't resolve
+  }
   return res.json();
 }
 
 async function refresh() {
   const res = await fetch("/api/state");
+  if (res.status === 401) {
+    window.location.href = "/";
+    return;
+  }
   state = await res.json();
   render();
 }
@@ -272,6 +280,12 @@ async function handleReset() {
 }
 
 function wireControls() {
+  $("logout-link").addEventListener("click", async (evt) => {
+    evt.preventDefault();
+    await api("/api/logout");
+    window.location.href = "/";
+  });
+
   $("attempt-sale-btn").addEventListener("click", async () => {
     const product = $("product-select").value;
     const qty = parseInt($("sale-qty").value, 10) || 0;

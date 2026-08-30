@@ -1,0 +1,60 @@
+.login-page {
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.login-panel h2 { font-size: 1.1rem; }
+.login-hint {
+  font-style: normal;
+  font-weight: normal;
+  font-size: 0.85rem;
+  opacity: 0.85;
+  margin: 0 0 14px 0;
+}
+
+#auth-form { display: flex; flex-direction: column; gap: 12px; }
+#auth-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-style: italic;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+#auth-form input {
+  font-family: inherit;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 1rem;
+  padding: 8px 10px;
+  border: 2px solid var(--maroon);
+  background: var(--cream);
+  border-radius: 3px;
+}
+
+.login-error {
+  background: #f3d4d0;
+  border: 2px solid #8a1a10;
+  color: #5a0e08;
+  border-radius: 3px;
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  font-style: normal;
+  font-weight: normal;
+}
+.login-error.hidden { display: none; }
+
+.login-buttons { display: flex; gap: 10px; }
+.login-buttons button {
+  flex: 1;
+  font-family: inherit;
+  font-style: italic;
+  font-weight: 800;
+  padding: 10px;
+  border: 3px solid var(--maroon);
+  border-radius: 4px;
+  background: var(--cream);
+  cursor: pointer;
+}
+.login-buttons button:hover { background: #fff; }
+#login-btn { background: var(--yellow); }

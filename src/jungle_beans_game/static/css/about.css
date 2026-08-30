@@ -54,3 +54,17 @@
   border-bottom: 2px solid var(--maroon);
 }
 .about-back:hover { color: var(--maroon); }
+
+.leaderboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-style: normal;
+  font-weight: normal;
+}
+.leaderboard-table th, .leaderboard-table td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid rgba(0,0,0,0.15);
+}
+.leaderboard-table th { font-style: italic; font-weight: 800; }
+.leaderboard-table tr:first-child td { font-weight: bold; }

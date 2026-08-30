@@ -3,15 +3,11 @@
 from __future__ import annotations
 
 import itertools
-import json
 import math
 import random
 from datetime import datetime, timezone
-from pathlib import Path
 
 from . import data
-
-SAVES_DIR = Path(__file__).resolve().parents[2] / "saves"
 
 
 def _haversine_km(a: data.Airport, b: data.Airport) -> float:
@@ -53,6 +49,7 @@ class GameState:
         self.notices: list[str] = []
         self.game_over = False
         self.win = False
+        self.win_recorded = False  # leaderboard bookkeeping, not persisted to save files
         self.game_over_reason = ""
 
         # Assign 4 negative / 3 positive / 3 baseline modifiers across the 10 airports.
@@ -296,6 +293,7 @@ class GameState:
         self._advance_day()
         self._log(f"Flew from {origin_name} to {self._airport_name()} for ${cost:,} airfare.")
         self._check_arrival_bonus()
+        self._check_airport_penalty()
         self._check_end_conditions()
         return {"ok": True}
 
@@ -328,6 +326,19 @@ class GameState:
                     f"[rolled {roll}/{data.PINEAPPLE_EXPRESS_FACES} on the d{data.DICE_SIDES}] "
                     f"{data.PINEAPPLE_EXPRESS['notice']} Prices here are down {pct}% while you stay."
                 )
+
+    def _check_airport_penalty(self) -> None:
+        if self.location == self.protected_airport:
+            return
+        roll = random.randint(1, 6)
+        if roll > data.AIRPORT_PENALTY_FACES:
+            return
+        self.life = max(0, self.life - data.AIRPORT_PENALTY_LIFE_LOSS)
+        notice = data.AIRPORT_PENALTY_NOTICE[self.location]
+        self._log(
+            f"[rolled {roll}/6 on the d6] {notice} "
+            f"({data.AIRPORT_PENALTY_LIFE_LOSS} half-heart damage)"
+        )
 
     def _advance_day(self) -> None:
         old_level = self.level
@@ -435,27 +446,13 @@ class GameState:
         state.drift = payload["drift"]
         state.shock = payload["shock"]
         state.regional_fare = payload.get("regional_fare") or cls._roll_regional_fares()
+        # Treat an already-won loaded save as already recorded, so saving and
+        # reloading a win can't be used to farm repeat leaderboard entries.
+        state.win_recorded = state.win
         return state
 
-    def save(self, name: str) -> str:
-        SAVES_DIR.mkdir(parents=True, exist_ok=True)
-        safe_name = "".join(c for c in name.strip() if c.isalnum() or c in "-_ ").strip() or "save"
-        path = SAVES_DIR / f"{safe_name}.json"
-        path.write_text(json.dumps(self.to_dict(), indent=2))
-        self._log(f"Game saved as '{safe_name}'.")
-        return safe_name
-
-    @staticmethod
-    def list_saves() -> list[str]:
-        if not SAVES_DIR.exists():
-            return []
-        return sorted(p.stem for p in SAVES_DIR.glob("*.json"))
-
-    @classmethod
-    def load(cls, name: str) -> "GameState":
-        path = SAVES_DIR / f"{name}.json"
-        payload = json.loads(path.read_text())
-        return cls.from_dict(payload)
+    def note_saved(self, name: str) -> None:
+        self._log(f"Game saved as '{name}'.")
 
     # ------------------------------------------------------------------ #
     # View model for the frontend
@@ -514,5 +511,4 @@ class GameState:
             "game_over": self.game_over,
             "win": self.win,
             "game_over_reason": self.game_over_reason,
-            "saves": self.list_saves(),
         }

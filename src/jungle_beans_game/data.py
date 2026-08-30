@@ -227,6 +227,30 @@ FIELD_BONUS_BY_SUM: dict[int, dict] = {
     s: bonus for bonus in FIELD_BONUSES for s in bonus["dice_sums"]
 }
 
+# Airport-specific randomized penalties — a flat 1d6 roll on arrival,
+# independent of level or market heat (unlike the field bonuses above).
+# Each airport has its own flavor-text mishap; odds and cost are the same
+# everywhere. Mobster protection still blocks it, matching the "no field
+# challenges here" wording used for the sale-triggered events.
+AIRPORT_PENALTY_NOTICE: dict[str, str] = {
+    "ATL": "While driving out to Decatur to meet your contact, you stopped at "
+    "Buc-ee's for gas and got bitten by a pygmy rattlesnake.",
+    "DXB": "You locked eyes with the daughter of the Crown Prince a minute too "
+    "long and were lightly caned for the faux pas.",
+    "HND": "Your local contact gifted you fermented fish — you've had "
+    "diarrhea for 3 days.",
+    "DFW": "You ate a bad BBQ meal at Sergeant Gramps' Roadhouse.",
+    "LHR": "Someone at your hotel blasted loud EDM beats until 5am and you "
+    "nearly lost your mind.",
+    "PVG": "Something felt off about that overcooked dim sum you just ate.",
+    "DEN": "Caught in a snowstorm still wearing your short shorts from Rio.",
+    "ORD": "You ate a diseased hot dog from a cart near Wrigley Field.",
+    "IST": "That kebab turned out to be sourced from sickly hedgehog meat.",
+    "GRU": "You ate some suspicious blueish-purple berries along the trail.",
+}
+AIRPORT_PENALTY_FACES = 1  # out of a d6 (1/6 ≈ 16.7% chance per arrival)
+AIRPORT_PENALTY_LIFE_LOSS = 2  # half-heart units — one full heart
+
 PINEAPPLE_EXPRESS: dict = {
     "key": "pineapple_express",
     "name": "Pineapple Express",
@@ -268,7 +292,7 @@ AIRFARE_PER_KM = 0.06
 STARTING_CASH = 5000
 STARTING_LIFE = 10  # half-heart units; 10 == 5 full hearts
 SALES_PER_DAY = 3
-PRICE_REFRESH_DAYS = 5
+PRICE_REFRESH_DAYS = 4
 WIN_NET_WORTH = 20000
 # Winning also requires having actually sold beans through every airport —
 # not just found one lucrative route — to match the "global distribution

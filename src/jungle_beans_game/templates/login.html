@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Jungle Beans — Log In</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/about.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}" />
+</head>
+<body class="about-body">
+  <div class="login-page">
+    <header class="about-header">
+      <h1>Jungle Beans</h1>
+      <p class="about-tagline">Live the Bean!</p>
+    </header>
+
+    <div class="panel login-panel">
+      <h2>Log in or create an account</h2>
+      <p class="login-hint">Just an email and a password — no verification, nothing fancy. Your account is what keeps your progress, saves, and leaderboard wins tied to you.</p>
+
+      <form id="auth-form">
+        <label>Email
+          <input type="email" id="auth-email" required autocomplete="username" />
+        </label>
+        <label>Password
+          <input type="password" id="auth-password" required autocomplete="current-password" minlength="4" />
+        </label>
+        <div id="auth-error" class="login-error hidden"></div>
+        <div class="login-buttons">
+          <button type="submit" id="login-btn">Log In</button>
+          <button type="button" id="register-btn">Create Account</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/login.js') }}"></script>
+</body>
+</html>

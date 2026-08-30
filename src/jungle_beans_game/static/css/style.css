@@ -74,6 +74,13 @@ button, select, input {
   white-space: nowrap;
 }
 .catchphrase-link:hover { color: var(--yellow); border-color: var(--yellow); }
+.logo-spacer { flex: 1; min-width: 0; }
+.account-line {
+  font-size: 0.78rem;
+  font-style: italic;
+  color: var(--cream);
+  white-space: nowrap;
+}
 
 .notices-panel { grid-area: notices; display: flex; flex-direction: column; }
 .airports-panel { grid-area: airports; display: flex; flex-direction: column; }

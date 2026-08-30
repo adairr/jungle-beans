@@ -9,8 +9,11 @@ wheels/
 # Virtual environments
 .venv
 
-# Local save games
+# Local save games (legacy file-based saves; superseded by jungle_beans.db)
 saves/
+
+# Player accounts, saves, and leaderboard
+jungle_beans.db
 
 # macOS
 .DS_Store

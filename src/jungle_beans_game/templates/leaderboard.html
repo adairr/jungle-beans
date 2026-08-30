@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Jungle Beans — Leaderboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/about.css') }}" />
+</head>
+<body class="about-body">
+  <div class="about-page">
+    <header class="about-header">
+      <h1>Jungle Beans</h1>
+      <p class="about-tagline">Leaderboard</p>
+    </header>
+
+    <div class="panel about-panel">
+      <h2>Fastest Wins</h2>
+      <p>Ranked by fewest in-game days to reach $20,000 net worth with beans sold through every airport.</p>
+      {% if rows %}
+      <table class="leaderboard-table">
+        <thead>
+          <tr><th>#</th><th>Player</th><th>Days</th><th>Net Worth</th></tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ row.email.split('@')[0] }}</td>
+            <td>{{ row.days }}</td>
+            <td>${{ "{:,}".format(row.net_worth) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p><em>No one's won yet. Be the first!</em></p>
+      {% endif %}
+    </div>
+
+    <a class="about-back" href="{{ url_for('index') }}">&larr; Back to the dashboard</a>
+  </div>
+</body>
+</html>

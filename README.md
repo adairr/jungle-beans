@@ -15,13 +15,17 @@ Requires [uv](https://docs.astral.sh/uv/).
 uv run python -m jungle_beans_game.app
 ```
 
-Then open http://127.0.0.1:5050 in Chrome, Safari, or Edge. The map tiles
-load live from OpenStreetMap, so an internet connection is needed for the
-map to render (everything else works fully offline).
+Then open http://127.0.0.1:5050 in Chrome, Safari, or Edge — you'll land
+on a simple email/password login (no verification, just enough to keep
+your progress, saves, and leaderboard wins tied to an account). The map
+tiles load live from OpenStreetMap, so an internet connection is needed
+for the map to render (everything else works fully offline).
 
-Each browser gets its own isolated game via a session cookie — safe to
-have multiple people play the same running instance at once (e.g. once
-hosted for friends), with no separate "local" vs "hosted" mode needed.
+Each logged-in account gets its own isolated game — safe to have multiple
+people play the same running instance at once (e.g. once hosted for
+friends), with no separate "local" vs "hosted" mode needed. Accounts,
+saves, and the leaderboard live in a local SQLite file (`jungle_beans.db`,
+gitignored, created automatically on first run).
 
 Debug/auto-reload is on by default (handy for local development); set
 `FLASK_DEBUG=0` to turn it off. For a real deployment, don't use this dev
@@ -103,11 +107,11 @@ so player sessions survive a server restart, e.g.
   Airports list and a progress line under Wallet) — a real global
   distribution network, not just one lucrative route. Hit 0 life and it's
   game over.
-- **Save** snapshots the current game to a named JSON file under `saves/`
-  (gitignored); **Load** restores one. Save files aren't scoped per player —
-  fine solo, but if hosting for multiple people, two players saving under
-  the same name will collide. Not yet fixed; a quick follow-up if it comes
-  up (prefix the filename with the session's player id).
+- **Save** snapshots the current game under a name, scoped to your account
+  (two players can both use the name "test" with no collision); **Load**
+  restores one of your own saves.
+- Winning records your run on the **Leaderboard** (linked next to "Live
+  the Bean!" in the header), ranked by fewest in-game days to win.
 
 ## Design decisions not fully spelled out in the original notes
 
@@ -120,15 +124,20 @@ underspecified. Calls made for this first playable build, easy to revisit:
 - A "Buy" control was added inline in the Market Prices panel (buying isn't
   risky the way selling is, so it doesn't share the Attempt Sale flow).
 - A win condition ($50k net worth) was added to give "survive" an endpoint.
+- Login is email/password only, no verification step — a friends-testing
+  app, not a production service. Passwords are hashed (werkzeug, never
+  stored in plaintext), but there's no "forgot password" flow; if you lose
+  it, a new account is the only recourse for now.
 
 ## Project layout
 
 ```
 src/jungle_beans_game/
   data.py       # airports, products, event table, tunable constants
-  engine.py     # GameState: market math, buy/sell/travel, save/load
-  app.py        # Flask routes / API
-  templates/    # dashboard HTML
+  engine.py     # GameState: market math, buy/sell/travel, serialization
+  db.py         # SQLite: accounts, saves, leaderboard
+  app.py        # Flask routes / API / auth
+  templates/    # dashboard, login, about, leaderboard HTML
   static/       # dashboard CSS + JS
-saves/          # save-game JSON files (gitignored)
+jungle_beans.db # accounts/saves/leaderboard (gitignored, auto-created)
 ```

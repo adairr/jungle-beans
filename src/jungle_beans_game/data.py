@@ -150,6 +150,12 @@ EVENTS: list[dict] = [
                 "notice": "Local police seized your entire stock.",
                 "weight": 1,
                 "inventory_loss_pct_range": (1.00, 1.00),
+                # "Entire stock" is an absolute claim, not a scalable one —
+                # there's no narratively sensible "partial confiscation of
+                # everything." Exempt from LEVEL_INTENSITY_MULTIPLIER so it
+                # stays a true 100% at every level instead of the notice
+                # text overpromising what actually happened.
+                "intensity_exempt": True,
             },
         ],
     },

@@ -250,7 +250,8 @@ class GameState:
 
         lost_qty = 0
         if "inventory_loss_pct_range" in outcome:
-            pct = min(1.0, random.uniform(*outcome["inventory_loss_pct_range"]) * intensity)
+            inv_intensity = 1.0 if outcome.get("intensity_exempt") else intensity
+            pct = min(1.0, random.uniform(*outcome["inventory_loss_pct_range"]) * inv_intensity)
             lost_qty = int(self.inventory[product_key] * pct)
             self.inventory[product_key] = max(0, self.inventory[product_key] - lost_qty)
 

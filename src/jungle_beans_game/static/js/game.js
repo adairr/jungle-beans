@@ -95,8 +95,9 @@ function renderAirports() {
       if (a.code === selectedAirport) classes.push("selected");
       const fare = a.is_current ? "" : `$${a.airfare.toLocaleString()}`;
       const heat = `<span class="heat-badge ${heatClass(a.heat, a.heat_max)}">🔥${a.heat}/${a.heat_max}</span>`;
+      const covered = a.win_covered ? `<span class="covered-badge" title="Sold here — counts toward the win">✓</span>` : "";
       return `<li class="${classes.join(" ")}" data-code="${a.code}">
-        <span>${a.name} ${heat}</span><span>${fare}</span>
+        <span>${covered}${a.name} ${heat}</span><span>${fare}</span>
       </li>`;
     })
     .join("");
@@ -272,7 +273,7 @@ function renderOverlay() {
   const overlay = $("game-over-overlay");
   if (state.game_over) {
     overlay.classList.remove("hidden");
-    $("overlay-title").textContent = state.win ? "You Win!" : "Game Over";
+    $("overlay-title").textContent = state.win ? "✈️🔥 YOU WIN! 🔥✈️" : "Game Over";
     $("overlay-message").textContent = state.game_over_reason;
   } else {
     overlay.classList.add("hidden");
@@ -281,6 +282,10 @@ function renderOverlay() {
 
 function render() {
   $("wallet-value").textContent = `$${state.cash.toLocaleString()}`;
+  $("net-worth-value").textContent = `$${state.net_worth.toLocaleString()}`;
+  $("net-worth-goal").textContent = `$${state.net_worth_goal.toLocaleString()}`;
+  $("airports-covered-value").textContent = state.airports_covered;
+  $("airports-total-value").textContent = state.airports_total;
   $("debt-value").textContent = `$${state.debt.toLocaleString()}`;
   $("life-hearts").innerHTML = renderHearts(state.life, state.life_max);
   $("day-value").textContent = state.day;

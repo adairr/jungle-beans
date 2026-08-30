@@ -45,6 +45,7 @@ class GameState:
         self.location = data.HOME_AIRPORT
         self.inventory: dict[str, int] = {p.key: 0 for p in data.PRODUCTS}
         self.sales_count = 0
+        self.sales_by_airport: dict[str, int] = {a.code: 0 for a in data.AIRPORTS}
         self.sales_since_day = 0
         self.notices: list[str] = []
         self.game_over = False
@@ -52,14 +53,19 @@ class GameState:
         self.game_over_reason = ""
 
         # Assign 4 negative / 3 positive / 3 baseline modifiers across the 10 airports.
-        codes = [a.code for a in data.AIRPORTS]
+        # São Paulo is always the deepest discount — it's the source region, right at
+        # the Amazon, so stocking up on Raw Bean/Bean Beverage at home is always the
+        # cheapest option in the game (helps a new player get their first trade going).
+        codes = [a.code for a in data.AIRPORTS if a.code != data.HOME_AIRPORT]
         random.shuffle(codes)
-        self.airport_modifier: dict[str, float] = {}
-        for code in codes[:4]:
+        self.airport_modifier: dict[str, float] = {
+            data.HOME_AIRPORT: round(random.uniform(-0.45, -0.36), 3)
+        }
+        for code in codes[:3]:
             self.airport_modifier[code] = round(random.uniform(-0.35, -0.15), 3)
-        for code in codes[4:7]:
+        for code in codes[3:6]:
             self.airport_modifier[code] = round(random.uniform(0.15, 0.35), 3)
-        for code in codes[7:]:
+        for code in codes[6:]:
             self.airport_modifier[code] = 0.0
 
         # Per-airport/product drift, updated on price refresh days.
@@ -169,6 +175,7 @@ class GameState:
             self.inventory[product_key] -= qty
             self.cash += revenue
             self.sales_count += 1
+            self.sales_by_airport[self.location] = self.sales_by_airport.get(self.location, 0) + qty
             self._log(f"Sold {qty}x {product.name} for ${revenue:,} at {self._airport_name()}.")
 
             post_roll = random.randint(1, data.DICE_SIDES)
@@ -281,16 +288,32 @@ class GameState:
         self._apply_shock()
         self._log("Market prices shifted around the world.")
 
+    def airports_covered(self) -> int:
+        return sum(
+            1
+            for a in data.AIRPORTS
+            if self.sales_by_airport.get(a.code, 0) >= data.WIN_MIN_SALES_PER_AIRPORT
+        )
+
     def _check_end_conditions(self) -> None:
         if self.life <= 0 and not self.game_over:
             self.game_over = True
             self.game_over_reason = "Your life meter hit zero. You've been taken off the board."
             self._log("GAME OVER — " + self.game_over_reason)
-        elif self.net_worth() >= data.WIN_NET_WORTH and not self.game_over:
+        elif (
+            self.net_worth() >= data.WIN_NET_WORTH
+            and self.airports_covered() >= len(data.AIRPORTS)
+            and not self.game_over
+        ):
             self.game_over = True
             self.win = True
-            self.game_over_reason = f"You built a ${self.net_worth():,} empire and retired a legend."
-            self._log("YOU WIN — " + self.game_over_reason)
+            self.game_over_reason = (
+                f"You built a ${self.net_worth():,} empire with beans moving through all "
+                f"{len(data.AIRPORTS)} airports and retired a legend."
+            )
+            self._log(
+                "✈️🔥✈️ YOU WIN! 🔥✈️🔥 " + self.game_over_reason + " 🔥✈️🔥✈️🔥"
+            )
 
     def _airport_name(self) -> str:
         return data.AIRPORT_BY_CODE[self.location].name
@@ -307,6 +330,7 @@ class GameState:
             "location": self.location,
             "inventory": self.inventory,
             "sales_count": self.sales_count,
+            "sales_by_airport": self.sales_by_airport,
             "sales_since_day": self.sales_since_day,
             "notices": self.notices,
             "game_over": self.game_over,
@@ -328,6 +352,9 @@ class GameState:
         state.location = payload["location"]
         state.inventory = payload["inventory"]
         state.sales_count = payload["sales_count"]
+        state.sales_by_airport = payload.get(
+            "sales_by_airport", {a.code: 0 for a in data.AIRPORTS}
+        )
         state.sales_since_day = payload["sales_since_day"]
         state.notices = payload["notices"]
         state.game_over = payload["game_over"]
@@ -374,6 +401,8 @@ class GameState:
                     "airfare": None if a.code == self.location else airfare(self.location, a.code),
                     "heat": self.heat_faces(a.code),
                     "heat_max": data.DICE_SIDES,
+                    "sold_here": self.sales_by_airport.get(a.code, 0),
+                    "win_covered": self.sales_by_airport.get(a.code, 0) >= data.WIN_MIN_SALES_PER_AIRPORT,
                 }
             )
         products = []
@@ -401,6 +430,9 @@ class GameState:
             "level": self.level,
             "location": self.location,
             "net_worth": self.net_worth(),
+            "net_worth_goal": data.WIN_NET_WORTH,
+            "airports_covered": self.airports_covered(),
+            "airports_total": len(data.AIRPORTS),
             "airports": airports,
             "products": products,
             "airport_prices": airport_prices,

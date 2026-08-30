@@ -29,6 +29,23 @@ from .engine import GameState, airfare
 MAX_DAYS = 200
 MAX_STEPS = MAX_DAYS * 6  # safety net so a stuck bot can't spin forever
 CASH_RESERVE = 200  # the bot always keeps a little cash on hand
+EST_FARE_PER_UNCOVERED_STOP = 400  # rough reserve per airport still needed for the win condition
+
+
+def _travel_reserve(game: GameState) -> int:
+    """Cash held back for flights to airports still needed for the win
+    condition. Without this the bot is "asset-rich, cash-poor": it happily
+    invests down to CASH_RESERVE every cycle and ends up stranded with a
+    six-figure net worth in unsellable inventory but $100 in its pocket,
+    unable to afford the next $400 flight. A rough per-stop estimate (not a
+    real routing solve) is enough to stop that failure mode.
+    """
+    uncovered = sum(
+        1
+        for a in data.AIRPORTS
+        if game.sales_by_airport.get(a.code, 0) < data.WIN_MIN_SALES_PER_AIRPORT
+    )
+    return CASH_RESERVE + uncovered * EST_FARE_PER_UNCOVERED_STOP
 
 
 @contextlib.contextmanager
@@ -60,6 +77,9 @@ def economy_overrides(*, price_multiplier: float = 1.0, **attr_overrides) -> Ite
             setattr(data, name, value)
 
 
+UNCOVERED_BONUS = 3.0  # nudges the bot toward airports it still needs for the win condition
+
+
 def best_opportunity(game: GameState) -> tuple[str, int, str] | None:
     """The single (product, quantity, destination) trade with the highest
     *risk-adjusted* profit from here — gross profit discounted by the odds of
@@ -69,9 +89,12 @@ def best_opportunity(game: GameState) -> tuple[str, int, str] | None:
     which is deliberately the same airport the heat mechanic makes most
     dangerous, and faceplants immediately. Checked against every airport
     (including staying put), same as a player who clicks through Airports
-    first.
+    first. Destinations still needed for the win condition (haven't sold
+    there yet) get a bonus, so the bot doesn't just farm one lucrative route
+    forever and never finish the "sell through every airport" requirement.
     """
     best: tuple[float, str, int, str] | None = None
+    reserve = _travel_reserve(game)
     for p in game.unlocked_products():
         buy_price = game.current_price(game.location, p.key)
         if buy_price <= 0:
@@ -83,7 +106,7 @@ def best_opportunity(game: GameState) -> tuple[str, int, str] | None:
             if margin_per_unit <= 0:
                 continue
             fare = 0 if a.code == game.location else airfare(game.location, a.code)
-            budget = max(0, game.cash - CASH_RESERVE - fare)
+            budget = max(0, game.cash - reserve - fare)
             qty = int(budget // buy_price)
             if qty <= 0:
                 continue
@@ -93,6 +116,8 @@ def best_opportunity(game: GameState) -> tuple[str, int, str] | None:
             heat = game.heat_faces(a.code)
             clean_odds = ((data.DICE_SIDES - heat) / data.DICE_SIDES) ** 2
             expected_profit = gross_profit * clean_odds
+            if game.sales_by_airport.get(a.code, 0) < data.WIN_MIN_SALES_PER_AIRPORT:
+                expected_profit *= UNCOVERED_BONUS
             if expected_profit <= 0:
                 continue
             if best is None or expected_profit > best[0]:
@@ -101,6 +126,22 @@ def best_opportunity(game: GameState) -> tuple[str, int, str] | None:
         return None
     _, product_key, qty, dest = best
     return product_key, qty, dest
+
+
+def mop_up_target(game: GameState) -> str | None:
+    """Cheapest-to-reach airport still needed for the win condition, once
+    profit-seeking has dried up but coverage isn't complete — a real player
+    chasing the win would do this too rather than farming one route forever.
+    """
+    uncovered = [
+        a.code
+        for a in data.AIRPORTS
+        if game.sales_by_airport.get(a.code, 0) < data.WIN_MIN_SALES_PER_AIRPORT
+    ]
+    if not uncovered:
+        return None
+    uncovered.sort(key=lambda code: 0 if code == game.location else airfare(game.location, code))
+    return uncovered[0]
 
 
 def run_episode(seed: int | None = None) -> dict:
@@ -114,8 +155,27 @@ def run_episode(seed: int | None = None) -> dict:
         steps += 1
         opp = best_opportunity(game)
         if opp is None:
-            # Nothing profitable from here — reposition and hope for better prices,
-            # rather than taking a sale that's guaranteed to lose money.
+            mop_up = mop_up_target(game)
+            if mop_up is not None:
+                if mop_up != game.location:
+                    if not game.travel(mop_up)["ok"]:
+                        stuck = True
+                        break
+                    continue
+                # Already at an uncovered airport — punch the ticket with a
+                # minimal sale of whatever's cheapest, profit be damned.
+                cheapest = min(
+                    game.unlocked_products(),
+                    key=lambda p: game.current_price(game.location, p.key),
+                )
+                if game.inventory.get(cheapest.key, 0) < 1:
+                    if not game.buy(cheapest.key, 1)["ok"]:
+                        stuck = True
+                        break
+                game.attempt_sale(cheapest.key, 1)
+                continue
+            # Nothing profitable and nothing left to cover — reposition and
+            # hope for better prices, rather than taking a guaranteed loss.
             others = [a.code for a in data.AIRPORTS if a.code != game.location]
             if not game.travel(random.choice(others))["ok"]:
                 stuck = True

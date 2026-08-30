@@ -63,7 +63,15 @@ button, select, input {
 .airports-panel { grid-area: airports; display: flex; flex-direction: column; }
 .market-panel { grid-area: market; display: flex; flex-direction: column; overflow-y: auto; }
 .map-panel { grid-area: map; display: flex; padding: 4px; position: relative; }
-.wallet-panel { grid-area: wallet; display: flex; align-items: center; }
+.wallet-panel { grid-area: wallet; display: flex; flex-direction: column; justify-content: center; }
+.win-progress { margin: 4px 0 0 0; font-size: 0.72rem; font-style: normal; font-weight: normal; opacity: 0.8; }
+
+.covered-badge {
+  display: inline-block;
+  color: #1f6b2c;
+  font-weight: bold;
+  margin-right: 3px;
+}
 .debt-panel { grid-area: debt; display: flex; align-items: center; }
 .life-panel { grid-area: life; display: flex; align-items: center; gap: 12px; }
 

@@ -192,7 +192,11 @@ STARTING_CASH = 5000
 STARTING_LIFE = 10  # half-heart units; 10 == 5 full hearts
 SALES_PER_DAY = 3
 PRICE_REFRESH_DAYS = 5
-WIN_NET_WORTH = 15000
+WIN_NET_WORTH = 20000
+# Winning also requires having actually sold beans through every airport —
+# not just found one lucrative route — to match the "global distribution
+# network" fantasy. Units sold, not sale attempts, at any product mix.
+WIN_MIN_SALES_PER_AIRPORT = 1
 
 # Player level (and product unlocks) advance with elapsed in-game days, not
 # sales count — a new tier every LEVEL_UP_INTERVAL_DAYS days, capped at

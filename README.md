@@ -20,6 +20,9 @@ Then open http://127.0.0.1:5050 in Chrome, Safari, or Edge.
 ## Gameplay notes
 
 - Start in São Paulo (GRU) with $5,000, 5 full life hearts, and an empty bag.
+  GRU is always the deepest discount in the game (it's the source region,
+  right at the Amazon), so it's the best place to stock up on Raw Bean and
+  Bean Beverage early.
 - **Buy** beans cheap from the Market Prices panel, **Travel** to another
   airport, then **Attempt Sale** to cash in at a better price. Selling nets
   ~90% of the listed price (a dealer's cut) — buying and instantly reselling
@@ -57,7 +60,11 @@ Then open http://127.0.0.1:5050 in Chrome, Safari, or Edge.
   (day 3 = Bean Gummies, day 6 = Bean IV, day 9 = Bean Oil).
 - Debt is paid down automatically (20%/day) from your cash when you have
   some; unpaid debt accrues 5% interest per day.
-- Reach $15,000 net worth to win; hit 0 life and it's game over.
+- Win by reaching $20,000 net worth **and** having sold beans through
+  every one of the 10 airports at least once (tracked as a ✓ badge in the
+  Airports list and a progress line under Wallet) — a real global
+  distribution network, not just one lucrative route. Hit 0 life and it's
+  game over.
 - **Save** snapshots the current game to a named JSON file under `saves/`
   (gitignored); **Load** restores one.
 

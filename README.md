@@ -43,6 +43,12 @@ Then open http://127.0.0.1:5050 in Chrome, Safari, or Edge.
   challenges (Thief) also roll between distinct outcomes — e.g. either
   25-40% of your wallet or up to 75% of the product you're carrying, never
   both.
+- Challenge penalties scale with player level (`LEVEL_INTENSITY_MULTIPLIER`
+  in `data.py`: 0.5x at level 1, 0.75x at level 2, 1.0x at level 3, 1.25x at
+  level 4) — a level 1 smuggler moving Raw Bean gets a nerfed version of
+  every penalty, and it escalates as you level up into higher-value
+  products. Trigger odds (heat) are unaffected by level; only how much a
+  challenge costs you once it fires.
 - Every 3 sale attempts, or any trip between airports, advances the in-game
   day. Market prices drift every 5 days, and 3 random airports get a price
   "shock" each cycle.

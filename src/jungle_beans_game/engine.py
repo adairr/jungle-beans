@@ -189,32 +189,33 @@ class GameState:
         event = data.DICE_SUM_TO_EVENT[die1 + die2]
         outcomes = event["outcomes"]
         outcome = random.choices(outcomes, weights=[o["weight"] for o in outcomes])[0]
+        intensity = data.LEVEL_INTENSITY_MULTIPLIER.get(self.level, 1.0)
 
         cash_loss = 0
         if "cash_loss_pct_range" in outcome:
-            pct = random.uniform(*outcome["cash_loss_pct_range"])
+            pct = min(1.0, random.uniform(*outcome["cash_loss_pct_range"]) * intensity)
             cash_loss = int(self.cash * pct)
             self.cash = max(0, self.cash - cash_loss)
         if "cash_flat_range" in outcome:
-            flat = random.randint(*outcome["cash_flat_range"])
+            flat = int(round(random.randint(*outcome["cash_flat_range"]) * intensity))
             flat = min(flat, self.cash)  # a flat fine can't take cash you don't have
             cash_loss += flat
             self.cash = max(0, self.cash - flat)
 
         lost_qty = 0
         if "inventory_loss_pct_range" in outcome:
-            pct = random.uniform(*outcome["inventory_loss_pct_range"])
+            pct = min(1.0, random.uniform(*outcome["inventory_loss_pct_range"]) * intensity)
             lost_qty = int(self.inventory[product_key] * pct)
             self.inventory[product_key] = max(0, self.inventory[product_key] - lost_qty)
 
         debt_gain = 0
         if "debt_gain_range" in outcome:
-            debt_gain = random.randint(*outcome["debt_gain_range"])
+            debt_gain = int(round(random.randint(*outcome["debt_gain_range"]) * intensity))
             self.debt += debt_gain
 
         life_loss = 0
         if "life_loss_range" in outcome:
-            life_loss = random.randint(*outcome["life_loss_range"])
+            life_loss = int(round(random.randint(*outcome["life_loss_range"]) * intensity))
             self.life = max(0, self.life - life_loss)
 
         lede = (

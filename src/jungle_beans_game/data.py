@@ -198,3 +198,16 @@ WIN_NET_WORTH = 50000
 # sales count — a new tier every LEVEL_UP_INTERVAL_DAYS days, capped at
 # level 4. E.g. at 3: day 0-2 = level 1, day 3-5 = level 2 (Bean Gummies), etc.
 LEVEL_UP_INTERVAL_DAYS = 3
+
+# Field challenge penalties scale with player level — a new smuggler
+# starting out with Raw Bean shouldn't face the same heat as a level 4
+# operator moving Bean Oil. Every sampled penalty (cash/inventory/life/debt)
+# is multiplied by this before being applied; percentages are then clamped
+# to 100%. Trigger odds (heat) are unaffected — this only scales how much a
+# challenge costs you once it fires, not how often one fires.
+LEVEL_INTENSITY_MULTIPLIER: dict[int, float] = {
+    1: 0.5,
+    2: 0.75,
+    3: 1.0,
+    4: 1.25,
+}

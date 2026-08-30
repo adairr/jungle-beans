@@ -1,0 +1,1 @@
+1.0x prices        win  6.4%  bankrupt  0.2%  stuck 93.4%  timeout  0.0%  days/win   16  avg net worth $  11,008  avg sales   2.7

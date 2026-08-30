@@ -46,8 +46,9 @@ Then open http://127.0.0.1:5050 in Chrome, Safari, or Edge.
 - Every 3 sale attempts, or any trip between airports, advances the in-game
   day. Market prices drift every 5 days, and 3 random airports get a price
   "shock" each cycle.
-- Higher-tier products (Bean Gummies, Bean IV, Bean Oil) unlock as your
-  sales count grows (every 10 sales = +1 level, up to level 4).
+- Higher-tier products (Bean Gummies, Bean IV, Bean Oil) unlock with elapsed
+  in-game days, not sales count — a new level every 3 days, up to level 4
+  (day 3 = Bean Gummies, day 6 = Bean IV, day 9 = Bean Oil).
 - Debt is paid down automatically (20%/day) from your cash when you have
   some; unpaid debt accrues 5% interest per day.
 - Reach $50,000 net worth to win; hit 0 life and it's game over.
@@ -59,7 +60,8 @@ Then open http://127.0.0.1:5050 in Chrome, Safari, or Edge.
 The source design notes (`JB_template.md`) left a few mechanics
 underspecified. Calls made for this first playable build, easy to revisit:
 
-- Product tier unlocks are keyed off total sales count (10 sales/level).
+- Product tier unlocks are keyed off elapsed in-game days (`LEVEL_UP_INTERVAL_DAYS`
+  in `data.py`, currently 3 days/level).
 - Debt has no dedicated UI action — it auto-amortizes each day instead.
 - A "Buy" control was added inline in the Market Prices panel (buying isn't
   risky the way selling is, so it doesn't share the Attempt Sale flow).

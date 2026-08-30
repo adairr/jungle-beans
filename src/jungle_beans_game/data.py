@@ -193,3 +193,8 @@ STARTING_LIFE = 10  # half-heart units; 10 == 5 full hearts
 SALES_PER_DAY = 3
 PRICE_REFRESH_DAYS = 5
 WIN_NET_WORTH = 50000
+
+# Player level (and product unlocks) advance with elapsed in-game days, not
+# sales count — a new tier every LEVEL_UP_INTERVAL_DAYS days, capped at
+# level 4. E.g. at 3: day 0-2 = level 1, day 3-5 = level 2 (Bean Gummies), etc.
+LEVEL_UP_INTERVAL_DAYS = 3

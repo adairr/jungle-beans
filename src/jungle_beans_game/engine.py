@@ -84,7 +84,7 @@ class GameState:
     # ------------------------------------------------------------------ #
     @property
     def level(self) -> int:
-        return min(1 + self.sales_count // 10, 4)
+        return min(1 + self.day // data.LEVEL_UP_INTERVAL_DAYS, 4)
 
     def unlocked_products(self) -> list[data.Product]:
         return [p for p in data.PRODUCTS if p.unlock_level <= self.level]
@@ -168,11 +168,8 @@ class GameState:
             revenue = int(round(price * qty * (1 - data.SELL_SPREAD_PCT)))
             self.inventory[product_key] -= qty
             self.cash += revenue
-            old_level = self.level
             self.sales_count += 1
             self._log(f"Sold {qty}x {product.name} for ${revenue:,} at {self._airport_name()}.")
-            if self.level > old_level:
-                self._log(f"Reputation grows — you've reached level {self.level}!")
 
             post_roll = random.randint(1, data.DICE_SIDES)
             if post_roll <= hot_faces:
@@ -259,6 +256,7 @@ class GameState:
         return {"ok": True}
 
     def _advance_day(self) -> None:
+        old_level = self.level
         self.day += 1
         if self.debt > 0:
             payment = min(self.cash, max(1, int(self.debt * 0.2)))
@@ -268,6 +266,10 @@ class GameState:
                 self.debt = int(self.debt * 1.05)
         if self.day % data.PRICE_REFRESH_DAYS == 0:
             self._refresh_prices()
+        if self.level > old_level:
+            unlocked = [p for p in data.PRODUCTS if p.unlock_level == self.level]
+            names = ", ".join(p.name for p in unlocked) or "new tiers"
+            self._log(f"Reputation grows — you've reached level {self.level}! {names} unlocked.")
 
     def _refresh_prices(self) -> None:
         for airport_drift in self.drift.values():

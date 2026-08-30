@@ -291,6 +291,11 @@ function render() {
   $("day-value").textContent = state.day;
   $("level-value").textContent = `Lvl ${state.level} · ${state.sales_since_day}/${state.sales_per_day} sales today`;
 
+  const statusBits = [];
+  if (state.protected_airport === state.location) statusBits.push("🛡️ Mobster protection active");
+  if (state.price_discount_airport === state.location) statusBits.push("🍍 Pineapple Express: prices down 25%");
+  $("status-effects").textContent = statusBits.join(" · ");
+
   renderNotices();
   renderAirports();
   renderMarket();

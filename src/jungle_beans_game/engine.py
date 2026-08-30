@@ -48,6 +48,8 @@ class GameState:
         self.sales_count = 0
         self.sales_by_airport: dict[str, int] = {a.code: 0 for a in data.AIRPORTS}
         self.sales_since_day = 0
+        self.protected_airport: str | None = None
+        self.price_discount_airport: str | None = None
         self.notices: list[str] = []
         self.game_over = False
         self.win = False
@@ -117,6 +119,8 @@ class GameState:
         drift = self.drift.get(airport_code, {}).get(product_key, 0.0)
         shock = self.shock.get(airport_code, 0.0)
         price = product.base_price * (1 + modifier) * (1 + drift) * (1 + shock)
+        if airport_code == self.price_discount_airport:
+            price *= 1 - data.PINEAPPLE_EXPRESS["price_discount_pct"]
         return max(5, int(round(price)))
 
     def prices_at(self, airport_code: str) -> dict[str, int]:
@@ -189,7 +193,9 @@ class GameState:
         if held < qty:
             return {"ok": False, "error": f"You only have {held}x {product.name}."}
 
-        hot_faces = self.heat_faces(self.location)
+        # Mobster protection grants full immunity from field challenges at
+        # this specific airport for as long as the player stays here.
+        hot_faces = 0 if self.location == self.protected_airport else self.heat_faces(self.location)
 
         pre_roll = random.randint(1, data.DICE_SIDES)
         if pre_roll <= hot_faces:
@@ -281,12 +287,47 @@ class GameState:
             return {"ok": False, "error": f"Airfare to {data.AIRPORT_BY_CODE[dest_code].name} is ${cost:,} — you can't afford it."}
         self.cash -= cost
         origin_name = self._airport_name()
+        # Status effects are scoped to "while stationed" at the airport that
+        # granted them — leaving always ends them, win or lose.
+        self.protected_airport = None
+        self.price_discount_airport = None
         self.location = dest_code
         self.sales_since_day = 0
         self._advance_day()
         self._log(f"Flew from {origin_name} to {self._airport_name()} for ${cost:,} airfare.")
+        self._check_arrival_bonus()
         self._check_end_conditions()
         return {"ok": True}
+
+    def _check_arrival_bonus(self) -> None:
+        if self.level < data.FIELD_BONUS_MIN_LEVEL:
+            return
+        ratios = [
+            self.current_price(self.location, p.key) / p.base_price for p in data.PRODUCTS
+        ]
+        avg_ratio = sum(ratios) / len(ratios)
+
+        if avg_ratio > 1.0:
+            die1, die2 = random.randint(1, 6), random.randint(1, 6)
+            bonus = data.FIELD_BONUS_BY_SUM.get(die1 + die2)
+            if bonus is None:
+                return
+            detail = [f"[rolled {die1}+{die2}={die1 + die2} → {bonus['name']}] {bonus['notice']}"]
+            if "cash_gain" in bonus:
+                self.cash += bonus["cash_gain"]
+                detail.append(f"Gained ${bonus['cash_gain']:,}.")
+            if bonus.get("protection"):
+                self.protected_airport = self.location
+            self._log(" ".join(detail))
+        elif avg_ratio < 1.0:
+            roll = random.randint(1, data.DICE_SIDES)
+            if roll <= data.PINEAPPLE_EXPRESS_FACES:
+                self.price_discount_airport = self.location
+                pct = int(data.PINEAPPLE_EXPRESS["price_discount_pct"] * 100)
+                self._log(
+                    f"[rolled {roll}/{data.PINEAPPLE_EXPRESS_FACES} on the d{data.DICE_SIDES}] "
+                    f"{data.PINEAPPLE_EXPRESS['notice']} Prices here are down {pct}% while you stay."
+                )
 
     def _advance_day(self) -> None:
         old_level = self.level
@@ -357,6 +398,8 @@ class GameState:
             "sales_count": self.sales_count,
             "sales_by_airport": self.sales_by_airport,
             "sales_since_day": self.sales_since_day,
+            "protected_airport": self.protected_airport,
+            "price_discount_airport": self.price_discount_airport,
             "notices": self.notices,
             "game_over": self.game_over,
             "win": self.win,
@@ -381,6 +424,8 @@ class GameState:
         state.sales_by_airport = payload.get(
             "sales_by_airport", {a.code: 0 for a in data.AIRPORTS}
         )
+        state.protected_airport = payload.get("protected_airport")
+        state.price_discount_airport = payload.get("price_discount_airport")
         state.sales_since_day = payload["sales_since_day"]
         state.notices = payload["notices"]
         state.game_over = payload["game_over"]
@@ -460,6 +505,8 @@ class GameState:
             "net_worth_goal": data.WIN_NET_WORTH,
             "airports_covered": self.airports_covered(),
             "airports_total": len(data.AIRPORTS),
+            "protected_airport": self.protected_airport,
+            "price_discount_airport": self.price_discount_airport,
             "airports": airports,
             "products": products,
             "airport_prices": airport_prices,

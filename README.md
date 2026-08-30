@@ -51,6 +51,14 @@ Then open http://127.0.0.1:5050 in Chrome, Safari, or Edge.
   challenges (Thief) also roll between distinct outcomes — e.g. either
   25-40% of your wallet or up to 75% of the product you're carrying, never
   both.
+- At level 2+, arriving airports also roll for a positive **field bonus** —
+  a counterweight to challenges. Arriving at a "high cost" market (good
+  place to sell) rolls 2d6 against 5 bonuses (cash gifts from $200-$750, or
+  mobster protection — full challenge immunity while you stay there), with
+  "nothing happens" as the single most likely outcome (27.8%) so it stays a
+  treat. Arriving at a "low cost" market (good place to buy) instead has a
+  25% chance of Pineapple Express — a 25% price cut at that airport while
+  you stay. Active effects show as a status line under Wallet.
 - Challenge penalties scale with player level (`LEVEL_INTENSITY_MULTIPLIER`
   in `data.py`: 0.5x at level 1, 0.75x at level 2, 1.0x at level 3, 1.25x at
   level 4) — a level 1 smuggler moving Raw Bean gets a nerfed version of

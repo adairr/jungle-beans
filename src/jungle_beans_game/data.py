@@ -171,6 +171,70 @@ DICE_SUM_TO_EVENT: dict[int, dict] = {
     s: event for event in EVENTS for s in event["dice_sums"]
 }
 
+# Positive counterweight to the challenge table, introduced once the player
+# reaches level 2. Checked once per arrival (Travel), not per sale — a
+# player who's already earned unfavorable-market resilience deserves a
+# chance at favorable-market upside too. Five of the six bonuses only fire
+# arriving at a "high cost" market (average price ratio above 1.0 — a good
+# place to sell); Pineapple Express is the mirror case for a "low cost"
+# market (a good place to buy) and can't share the same die-roll table with
+# a mutually-exclusive trigger condition, so it's checked as its own
+# independent roll (PINEAPPLE_EXPRESS_FACES) rather than a seventh dice_sums
+# entry here. Ordered biggest-reward-to-rarest, same principle as the
+# challenge table: {6,8} (27.8%) is deliberately left unmapped so "nothing
+# happens" stays the single most likely outcome even at a high-cost
+# arrival — bonuses should feel like a treat, not the default.
+FIELD_BONUS_MIN_LEVEL = 2
+
+FIELD_BONUSES: list[dict] = [
+    {
+        "key": "hippie_donation",
+        "name": "Local hippie commune donation",
+        "dice_sums": (2, 12),  # 2/36 = 5.6% — biggest prize, rarest
+        "notice": "A local hippie commune, grateful for the blissful beans, donates to your cause.",
+        "cash_gain": 750,
+    },
+    {
+        "key": "mobster_protection",
+        "name": "Local mobster protection",
+        "dice_sums": (3, 11),  # 4/36 = 11.1%
+        "notice": "Local mobsters take a liking to you — no field challenges here while you stay.",
+        "protection": True,
+    },
+    {
+        "key": "govt_support",
+        "name": "Local government support",
+        "dice_sums": (4, 10),  # 6/36 = 16.7%
+        "notice": "The local government announces surprise support for jungle beans and gifts you cash.",
+        "cash_gain": 500,
+    },
+    {
+        "key": "catch_thief",
+        "name": "Caught the thief first",
+        "dice_sums": (7,),  # 6/36 = 16.7%
+        "notice": "You spot the thief before they can shake you down and pocket their cash instead.",
+        "cash_gain": 300,
+    },
+    {
+        "key": "travel_voucher",
+        "name": "Journalist travel voucher",
+        "dice_sums": (5, 9),  # 8/36 = 22.2% — smallest prize, most common
+        "notice": "A local journalist, grateful for the story, gifts you a travel voucher.",
+        "cash_gain": 200,
+    },
+]
+FIELD_BONUS_BY_SUM: dict[int, dict] = {
+    s: bonus for bonus in FIELD_BONUSES for s in bonus["dice_sums"]
+}
+
+PINEAPPLE_EXPRESS: dict = {
+    "key": "pineapple_express",
+    "name": "Pineapple Express",
+    "notice": "A pineapple express weather pattern rolls in, dropping bean prices here even further.",
+    "price_discount_pct": 0.25,
+}
+PINEAPPLE_EXPRESS_FACES = 3  # out of 12 (25%) on arrival at a low-cost market
+
 # Risk is now tied to reward. Each airport's "heat" is how many faces (out of
 # a d12) count as a hit, derived from how favorable its current prices are
 # (average current price / base price across all products): a calm/cheap

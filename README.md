@@ -1,6 +1,6 @@
 # Jungle Beans
 
-A browser-playable trading/survival game inspired by Dope Wars, built with
+A browser-playable trading/survival game inspired by 90's off-brand windows games, built with
 Flask (Python) on the backend and a retro Minesweeper-style dashboard on the
 front end. Buy and sell *Jungle Beans* — a miracle medicinal plant that Mega
 Pharma wants banned — across 10 global airports, dodge random field

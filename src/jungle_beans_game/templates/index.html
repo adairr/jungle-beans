@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Jungle Beans</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+  <div id="game-over-overlay" class="overlay hidden">
+    <div class="overlay-box">
+      <h2 id="overlay-title">Game Over</h2>
+      <p id="overlay-message"></p>
+      <button id="overlay-reset-btn">Start a new run</button>
+    </div>
+  </div>
+
+  <div class="dashboard">
+    <div class="panel logo-panel">
+      <h1>Jungle Beans</h1>
+    </div>
+
+    <div class="panel notices-panel">
+      <h2>Notices:</h2>
+      <ul id="notices-list" class="notices-list"></ul>
+    </div>
+
+    <div class="panel airports-panel">
+      <h2>Airports:</h2>
+      <ul id="airports-list" class="airports-list"></ul>
+    </div>
+
+    <div class="panel market-panel">
+      <h2>Market Prices:</h2>
+      <table class="market-table">
+        <thead>
+          <tr><th>Product</th><th>Price</th><th>Own</th><th>Qty</th><th></th></tr>
+        </thead>
+        <tbody id="market-body"></tbody>
+      </table>
+    </div>
+
+    <div class="panel map-panel">
+      <svg id="world-map" viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+
+    <div class="panel wallet-panel">
+      <h2>wallet: <span id="wallet-value">$0</span></h2>
+    </div>
+    <div class="panel debt-panel">
+      <h2>debt: <span id="debt-value">$0</span></h2>
+    </div>
+    <div class="panel life-panel">
+      <h2>life:</h2>
+      <div id="life-hearts" class="life-hearts"></div>
+    </div>
+
+    <div class="panel bottom-bar">
+      <div class="bottom-cell day-cell">
+        <span class="label">Day</span>
+        <span id="day-value">0</span>
+        <span class="sublabel" id="level-value">Lvl 1</span>
+      </div>
+      <div class="bottom-cell product-cell">
+        <span class="label">Product</span>
+        <select id="product-select"></select>
+        <input id="sale-qty" type="number" min="1" value="1" />
+      </div>
+      <div class="bottom-cell">
+        <button id="attempt-sale-btn">Attempt Sale</button>
+      </div>
+      <div class="bottom-cell">
+        <button id="travel-btn">Travel</button>
+      </div>
+      <div class="bottom-cell">
+        <button id="reset-btn">Reset Game</button>
+      </div>
+      <div class="bottom-cell save-cell">
+        <button id="save-btn">Save</button>
+        <input id="save-name" type="text" placeholder="save name" />
+      </div>
+      <div class="bottom-cell load-cell">
+        <select id="load-select"></select>
+        <button id="load-btn">Load</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/game.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,205 @@
+:root {
+  --olive: #96a80c;
+  --olive-dark: #7f8f0a;
+  --maroon: #4a2f2f;
+  --yellow: #fbf35b;
+  --cream: #f2efe3;
+  --sky: #8fd0e0;
+  --ink: #1c1a10;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--olive-dark);
+  font-family: "Arial Black", Impact, "Segoe UI", sans-serif;
+  color: var(--ink);
+}
+
+h1, h2 {
+  margin: 0 0 6px 0;
+  font-style: italic;
+  font-weight: 800;
+}
+
+button, select, input {
+  font-family: inherit;
+  font-style: italic;
+  font-weight: 700;
+}
+
+.dashboard {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: auto 1fr 1fr 1fr 1fr auto;
+  grid-template-areas:
+    "logo     notices  airports"
+    "market   notices  airports"
+    "map      map      wallet"
+    "map      map      debt"
+    "map      map      life"
+    "bottombar bottombar bottombar";
+  gap: 6px;
+  padding: 6px;
+  height: 100vh;
+  width: 100vw;
+}
+
+.panel {
+  background: var(--olive);
+  border: 4px solid var(--maroon);
+  border-radius: 2px;
+  padding: 10px 14px;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.logo-panel { grid-area: logo; }
+.logo-panel h1 { color: var(--yellow); font-size: 2rem; }
+
+.notices-panel { grid-area: notices; display: flex; flex-direction: column; }
+.airports-panel { grid-area: airports; display: flex; flex-direction: column; }
+.market-panel { grid-area: market; display: flex; flex-direction: column; overflow-y: auto; }
+.map-panel { grid-area: map; display: flex; padding: 4px; }
+.wallet-panel { grid-area: wallet; display: flex; align-items: center; }
+.debt-panel { grid-area: debt; display: flex; align-items: center; }
+.life-panel { grid-area: life; display: flex; align-items: center; gap: 12px; }
+
+.notices-list, .airports-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  flex: 1;
+  font-size: 0.85rem;
+  font-weight: normal;
+  font-style: normal;
+}
+
+.notices-list li {
+  padding: 3px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.15);
+}
+
+.airports-list li {
+  padding: 6px 8px;
+  margin-bottom: 3px;
+  border: 2px solid transparent;
+  border-radius: 3px;
+  cursor: pointer;
+  background: rgba(255,255,255,0.15);
+  display: flex;
+  justify-content: space-between;
+}
+
+.airports-list li:hover { background: rgba(255,255,255,0.3); }
+.airports-list li.current { background: var(--yellow); color: var(--ink); }
+.airports-list li.selected { border-color: var(--maroon); }
+
+.market-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.market-table th { text-align: left; font-style: italic; padding-bottom: 4px; }
+.market-table td { padding: 3px 4px; }
+.market-table tr.locked { opacity: 0.5; }
+.market-table input[type="number"] {
+  width: 48px;
+  border: 2px solid var(--maroon);
+  background: var(--cream);
+  padding: 1px 3px;
+}
+.market-table button {
+  border: 2px solid var(--maroon);
+  background: var(--cream);
+  border-radius: 3px;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+
+#world-map { width: 100%; height: 100%; background: var(--sky); border-radius: 2px; }
+.continent { fill: var(--cream); stroke: #cfc9ad; stroke-width: 1; }
+.airport-dot { cursor: pointer; }
+.airport-dot circle { stroke: var(--maroon); stroke-width: 1.5; }
+.airport-dot.current circle { fill: var(--yellow); r: 7; }
+.airport-dot.selected circle { fill: #ff8a4c; }
+.airport-dot text {
+  font-size: 11px;
+  font-weight: bold;
+  fill: var(--ink);
+  pointer-events: none;
+}
+.travel-line { stroke: var(--maroon); stroke-width: 2; stroke-dasharray: 5 4; fill: none; }
+.travel-plane {
+  fill: #ff5a3c;
+  stroke: var(--maroon);
+  stroke-width: 1;
+}
+
+.life-hearts { display: flex; gap: 4px; }
+
+.bottom-bar {
+  grid-area: bottombar;
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  padding: 8px 10px;
+}
+
+.bottom-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-right: 2px solid rgba(0,0,0,0.2);
+  padding-right: 10px;
+}
+.bottom-cell:last-child { border-right: none; }
+
+.bottom-cell .label { font-size: 0.75rem; }
+.bottom-cell .sublabel { font-size: 0.7rem; opacity: 0.8; }
+
+.bottom-bar button {
+  background: var(--cream);
+  border: 3px solid var(--maroon);
+  border-radius: 4px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+.bottom-bar button:hover { background: #fff; }
+.bottom-bar button:active { transform: translateY(1px); }
+
+.bottom-bar select, .bottom-bar input[type="text"], .bottom-bar input[type="number"] {
+  border: 2px solid var(--maroon);
+  background: var(--cream);
+  padding: 4px 6px;
+}
+#sale-qty { width: 55px; }
+#save-name { width: 110px; }
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+.overlay.hidden { display: none; }
+.overlay-box {
+  background: var(--olive);
+  border: 5px solid var(--maroon);
+  border-radius: 4px;
+  padding: 30px 40px;
+  text-align: center;
+  max-width: 420px;
+}
+.overlay-box h2 { color: var(--yellow); font-size: 1.6rem; }
+.overlay-box button {
+  margin-top: 14px;
+  background: var(--cream);
+  border: 3px solid var(--maroon);
+  border-radius: 4px;
+  padding: 10px 18px;
+  cursor: pointer;
+  font-size: 1rem;
+}

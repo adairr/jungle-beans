@@ -79,6 +79,14 @@ function renderNotices() {
   $("notices-list").innerHTML = state.notices.map((n) => `<li>${n}</li>`).join("");
 }
 
+function heatClass(heat, heatMax) {
+  const frac = heat / heatMax;
+  if (frac >= 0.75) return "heat-extreme";
+  if (frac >= 0.5) return "heat-hot";
+  if (frac >= 0.25) return "heat-warm";
+  return "heat-calm";
+}
+
 function renderAirports() {
   $("airports-list").innerHTML = state.airports
     .map((a) => {
@@ -86,8 +94,9 @@ function renderAirports() {
       if (a.code === state.location) classes.push("current");
       if (a.code === selectedAirport) classes.push("selected");
       const fare = a.is_current ? "" : `$${a.airfare.toLocaleString()}`;
+      const heat = `<span class="heat-badge ${heatClass(a.heat, a.heat_max)}">🔥${a.heat}/${a.heat_max}</span>`;
       return `<li class="${classes.join(" ")}" data-code="${a.code}">
-        <span>${a.name}</span><span>${fare}</span>
+        <span>${a.name} ${heat}</span><span>${fare}</span>
       </li>`;
     })
     .join("");
@@ -212,8 +221,10 @@ function showMapTooltip(airport, evt) {
       return `<div class="tooltip-row"><span>${p.name}</span><span>$${price.toLocaleString()}</span></div>`;
     })
     .join("");
+  const heat = `<div class="tooltip-row heat-line ${heatClass(airport.heat, airport.heat_max)}">
+    <span>Heat</span><span>🔥${airport.heat}/${airport.heat_max}</span></div>`;
   const tooltip = $("map-tooltip");
-  tooltip.innerHTML = `<span class="tooltip-title">${airport.name}</span>${rows}`;
+  tooltip.innerHTML = `<span class="tooltip-title">${airport.name}</span>${heat}${rows}`;
   tooltip.classList.remove("hidden");
   positionMapTooltip(evt);
 }

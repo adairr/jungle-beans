@@ -49,66 +49,133 @@ PRODUCTS: list[Product] = [
 
 PRODUCT_BY_KEY: dict[str, Product] = {p.key: p for p in PRODUCTS}
 
-# Field logistical challenges that can strike on an "Attempt Sale". Each entry
-# describes what it costs the player when it fires.
+# Field logistical challenges that can strike on an "Attempt Sale", per the
+# stats drafted in JB_template.md. Each event has one or more possible
+# "outcomes" — a notice, a relative weight (how often that branch is picked
+# among the event's outcomes), and ranges to sample the actual penalty from
+# (a fixed number is just a range whose min equals its max). *_pct ranges are
+# fractions of the current wallet/held quantity; *_flat ranges are dollar
+# amounts untouched by wallet size; life is in half-heart units (1 heart = 2).
+#
+# Which challenge fires is decided by summing two d6, not a uniform 1-in-6
+# pick — 2d6 is a bell curve (7 is 6x likelier than 2 or 12), so pairing each
+# event with a symmetric pair of sums gives 6 naturally different rarities
+# instead of an even split. Ordered here mildest/most-common to
+# most-severe/rarest: Shots Fired's 3-heart hit only shows up on the {2,12}
+# tail (5.6%), so the worst outcome stays a rare gut-punch rather than an
+# every-other-roll coinflip.
 EVENTS: list[dict] = [
+    {
+        "key": "extreme_weather",
+        "name": "Extreme weather variable",
+        "dice_sums": (6, 8),  # 10/36 = 27.8% of challenges — mildest, most common
+        "outcomes": [
+            {
+                "notice": "A tropical storm grounded flights and cost you cleanup fees.",
+                "weight": 1,
+                "cash_flat_range": (150, 150),
+            },
+        ],
+    },
     {
         "key": "payload_detected",
         "name": "Payload detected",
-        "notice": "Customs flagged your shipment! The beans in your bag are gone.",
-        "cash_loss_pct": 0.0,
-        "life_loss": 1,
-        "inventory_loss_pct": 1.0,
-        "debt_gain": 0,
-    },
-    {
-        "key": "police_seizure",
-        "name": "Police seizure/confiscation",
-        "notice": "Local police seized your stock and hit you with a fine.",
-        "cash_loss_pct": 0.25,
-        "life_loss": 1,
-        "inventory_loss_pct": 1.0,
-        "debt_gain": 500,
-    },
-    {
-        "key": "local_mobsters",
-        "name": "Local mobsters",
-        "notice": "Mobsters muscled in and took a cut of your cash.",
-        "cash_loss_pct": 0.35,
-        "life_loss": 2,
-        "inventory_loss_pct": 0.0,
-        "debt_gain": 0,
+        "dice_sums": (5, 9),  # 8/36 = 22.2%
+        "outcomes": [
+            {
+                "notice": "Customs flagged your shipment on the scanner — half your bag is gone.",
+                "weight": 1,
+                "inventory_loss_pct_range": (0.50, 0.50),
+            },
+            {
+                "notice": "Border agents wave you through for a flat processing 'fine'.",
+                "weight": 1,
+                "cash_flat_range": (500, 500),
+            },
+        ],
     },
     {
         "key": "thief",
         "name": "Thief",
-        "notice": "A pickpocket lifted product from your bag in the terminal.",
-        "cash_loss_pct": 0.0,
-        "life_loss": 1,
-        "inventory_loss_pct": 0.5,
-        "debt_gain": 0,
+        "dice_sums": (7,),  # 6/36 = 16.7%
+        "outcomes": [
+            {
+                "notice": "A pickpocket lifted cash right out of your jacket.",
+                "weight": 1,
+                "cash_loss_pct_range": (0.25, 0.40),
+            },
+            {
+                "notice": "A sneak thief made off with a chunk of your bag.",
+                "weight": 1,
+                "inventory_loss_pct_range": (0.40, 0.75),
+            },
+        ],
     },
     {
-        "key": "extreme_weather",
-        "name": "Extreme weather variable",
-        "notice": "A tropical storm grounded flights and spoiled part of your stock.",
-        "cash_loss_pct": 0.0,
-        "life_loss": 1,
-        "inventory_loss_pct": 0.3,
-        "debt_gain": 0,
+        "key": "local_mobsters",
+        "name": "Local mobsters",
+        "dice_sums": (4, 10),  # 6/36 = 16.7% — first tier with a life-loss branch
+        "outcomes": [
+            {
+                "notice": "Mobsters shake you down for cold hard cash.",
+                "weight": 1,
+                "cash_flat_range": (500, 500),
+            },
+            {
+                "notice": "Mobsters send a message you'll feel for days.",
+                "weight": 1,
+                "life_loss_range": (3, 3),
+            },
+        ],
+    },
+    {
+        "key": "police_seizure",
+        "name": "Police seizure/confiscation",
+        "dice_sums": (3, 11),  # 4/36 = 11.1%
+        "outcomes": [
+            {
+                "notice": "Local police seized your entire stock.",
+                "weight": 1,
+                "inventory_loss_pct_range": (1.00, 1.00),
+            },
+        ],
     },
     {
         "key": "shots_fired",
         "name": "Shots fired",
-        "notice": "Shots fired on the tarmac — you barely made it out alive.",
-        "cash_loss_pct": 0.1,
-        "life_loss": 3,
-        "inventory_loss_pct": 0.25,
-        "debt_gain": 0,
+        "dice_sums": (2, 12),  # 2/36 = 5.6% — rarest, most severe
+        "outcomes": [
+            {
+                "notice": "Shots fired on the tarmac — you barely made it out alive.",
+                "weight": 1,
+                "life_loss_range": (6, 6),
+            },
+        ],
     },
 ]
 
-EVENT_CHANCE_PER_SALE = 0.12
+DICE_SUM_TO_EVENT: dict[int, dict] = {
+    s: event for event in EVENTS for s in event["dice_sums"]
+}
+
+# Risk is now tied to reward. Each airport's "heat" is how many faces (out of
+# a d12) count as a hit, derived from how favorable its current prices are
+# (average current price / base price across all products): a calm/cheap
+# market stays near the baseline roll, a market with great sell prices runs
+# hot. Every Attempt Sale rolls twice against that threshold — once before
+# the deal (an ambush that cancels the sale) and once after (you got paid,
+# then got hit on the way out) — so a hot market can realistically clear 50%+
+# combined odds of a challenge on a single sale.
+DICE_SIDES = 12
+HEAT_BASE_FACES = 1  # baseline risk even at a calm/cheap market (1/12 ≈ 8%)
+# Faces added per 100% the market runs above baseline price. Simulator-tested:
+# 17 (50%+ heat at just a 30%-above-baseline deal) makes nearly every
+# profitable trade automatically dangerous, since there's rarely a safer
+# lower-margin route left to pick instead — win rate near 0% even at 4x
+# starting cash. 6 keeps the same "best deals are the most dangerous"
+# coupling but reserves 50%+ heat for genuinely exceptional price spikes,
+# leaving modest/safer trades available as a real alternative.
+HEAT_SENSITIVITY = 6
 
 # Sell orders execute at a discount to the listed market price (a bid/ask
 # spread). Without this, buying and immediately reselling the same product

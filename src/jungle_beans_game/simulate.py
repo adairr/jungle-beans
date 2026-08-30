@@ -61,10 +61,15 @@ def economy_overrides(*, price_multiplier: float = 1.0, **attr_overrides) -> Ite
 
 
 def best_opportunity(game: GameState) -> tuple[str, int, str] | None:
-    """The single (product, quantity, destination) trade with the highest projected
-    profit from here, after airfare and the sell spread — or None if nothing on the
-    board actually turns a profit. Checked against every airport (including staying
-    put), same as a player who clicks through the Airports list before committing.
+    """The single (product, quantity, destination) trade with the highest
+    *risk-adjusted* profit from here — gross profit discounted by the odds of
+    selling clean at the destination (heat governs both the pre- and post-sale
+    ambush rolls, so a clean sale needs both to miss). Without this discount
+    the bot (like a naive player) always chases the single biggest number,
+    which is deliberately the same airport the heat mechanic makes most
+    dangerous, and faceplants immediately. Checked against every airport
+    (including staying put), same as a player who clicks through Airports
+    first.
     """
     best: tuple[float, str, int, str] | None = None
     for p in game.unlocked_products():
@@ -82,11 +87,16 @@ def best_opportunity(game: GameState) -> tuple[str, int, str] | None:
             qty = int(budget // buy_price)
             if qty <= 0:
                 continue
-            profit = margin_per_unit * qty - fare
-            if profit <= 0:
+            gross_profit = margin_per_unit * qty - fare
+            if gross_profit <= 0:
                 continue
-            if best is None or profit > best[0]:
-                best = (profit, p.key, qty, a.code)
+            heat = game.heat_faces(a.code)
+            clean_odds = ((data.DICE_SIDES - heat) / data.DICE_SIDES) ** 2
+            expected_profit = gross_profit * clean_odds
+            if expected_profit <= 0:
+                continue
+            if best is None or expected_profit > best[0]:
+                best = (expected_profit, p.key, qty, a.code)
     if best is None:
         return None
     _, product_key, qty, dest = best
@@ -169,7 +179,8 @@ def main() -> None:
     parser.add_argument("--episodes", type=int, default=500)
     parser.add_argument("--price-multiplier", type=float, default=1.0)
     parser.add_argument("--starting-cash", type=int, default=None)
-    parser.add_argument("--event-chance", type=float, default=None)
+    parser.add_argument("--heat-base-faces", type=int, default=None, help="baseline risk out of 12 at a calm market")
+    parser.add_argument("--heat-sensitivity", type=float, default=None, help="extra faces per 100% price premium")
     parser.add_argument("--sell-spread", type=float, default=None, help="e.g. 0.10 for a 10% spread")
     parser.add_argument("--airfare-per-km", type=float, default=None)
     parser.add_argument("--airfare-base-fee", type=float, default=None)
@@ -184,8 +195,10 @@ def main() -> None:
     overrides = {}
     if args.starting_cash is not None:
         overrides["STARTING_CASH"] = args.starting_cash
-    if args.event_chance is not None:
-        overrides["EVENT_CHANCE_PER_SALE"] = args.event_chance
+    if args.heat_base_faces is not None:
+        overrides["HEAT_BASE_FACES"] = args.heat_base_faces
+    if args.heat_sensitivity is not None:
+        overrides["HEAT_SENSITIVITY"] = args.heat_sensitivity
     if args.sell_spread is not None:
         overrides["SELL_SPREAD_PCT"] = args.sell_spread
     if args.airfare_per_km is not None:

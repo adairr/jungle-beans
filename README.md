@@ -21,10 +21,28 @@ Then open http://127.0.0.1:5050 in Chrome, Safari, or Edge.
 
 - Start in São Paulo (GRU) with $5,000, 5 full life hearts, and an empty bag.
 - **Buy** beans cheap from the Market Prices panel, **Travel** to another
-  airport, then **Attempt Sale** to cash in at a better price.
-- Every sale attempt has a ~12% chance of triggering a random field
-  challenge (police seizure, thieves, extreme weather, etc.) that can cost
-  you cash, product, life, or saddle you with debt.
+  airport, then **Attempt Sale** to cash in at a better price. Selling nets
+  ~90% of the listed price (a dealer's cut) — buying and instantly reselling
+  the same product at the same airport is always a small loss, so real
+  profit has to come from genuine arbitrage or a price swing.
+- Every airport has a **heat** level (0-12, shown as a 🔥 badge in the
+  Airports list and on map hover) driven by how far above baseline its
+  current prices are running — the better the deal, the more attention it's
+  drawing. Every Attempt Sale rolls a d12 against that airport's heat twice:
+  once before the deal closes (an ambush that cancels the sale) and once
+  after (you got paid, then got hit on the way out). A genuinely hot market
+  can clear 50%+ combined odds of a field challenge on a single sale; a calm
+  one sits near an 8% baseline either way.
+- Once a challenge is confirmed to fire, *which* of the 6 (payload
+  detected, police seizure, local mobsters, thieves, extreme weather, shots
+  fired) it is comes from a 2d6 roll, not an even 1-in-6 — summed dice form
+  a bell curve, so grouping symmetric sums into 6 pairs gives each
+  challenge a different natural rarity (27.8% down to 5.6%). Shots Fired's
+  3-heart hit sits on the rarest tail, so the worst outcome stays a rare
+  gut-punch instead of as common as Extreme Weather's $150 ding. Some
+  challenges (Thief) also roll between distinct outcomes — e.g. either
+  25-40% of your wallet or up to 75% of the product you're carrying, never
+  both.
 - Every 3 sale attempts, or any trip between airports, advances the in-game
   day. Market prices drift every 5 days, and 3 random airports get a price
   "shock" each cycle.

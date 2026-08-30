@@ -100,6 +100,21 @@ class GameState:
     def prices_at(self, airport_code: str) -> dict[str, int]:
         return {p.key: self.current_price(airport_code, p.key) for p in data.PRODUCTS}
 
+    def heat_faces(self, airport_code: str) -> int:
+        """How many faces of a d12 count as a "challenge" roll at this airport.
+
+        Scales with how far above baseline the market's average price is
+        running — the better the deal, the more enforcement attention it's
+        drawing. Always at least HEAT_BASE_FACES, capped at DICE_SIDES.
+        """
+        ratios = [
+            self.current_price(airport_code, p.key) / p.base_price for p in data.PRODUCTS
+        ]
+        avg_ratio = sum(ratios) / len(ratios)
+        premium = max(0.0, avg_ratio - 1.0)
+        faces = data.HEAT_BASE_FACES + round(premium * data.HEAT_SENSITIVITY)
+        return max(1, min(data.DICE_SIDES, faces))
+
     def net_worth(self) -> int:
         inv_value = sum(
             self.inventory[k] * self.current_price(self.location, k) for k in self.inventory
@@ -143,10 +158,11 @@ class GameState:
         if held < qty:
             return {"ok": False, "error": f"You only have {held}x {product.name}."}
 
-        triggered = random.random() < data.EVENT_CHANCE_PER_SALE
-        if triggered:
-            event = random.choice(data.EVENTS)
-            self._resolve_event(event, product_key)
+        hot_faces = self.heat_faces(self.location)
+
+        pre_roll = random.randint(1, data.DICE_SIDES)
+        if pre_roll <= hot_faces:
+            self._resolve_event(product_key, "pre", pre_roll, hot_faces)
         else:
             price = self.current_price(self.location, product_key)
             revenue = int(round(price * qty * (1 - data.SELL_SPREAD_PCT)))
@@ -158,6 +174,10 @@ class GameState:
             if self.level > old_level:
                 self._log(f"Reputation grows — you've reached level {self.level}!")
 
+            post_roll = random.randint(1, data.DICE_SIDES)
+            if post_roll <= hot_faces:
+                self._resolve_event(product_key, "post", post_roll, hot_faces)
+
         self.sales_since_day += 1
         if self.sales_since_day >= data.SALES_PER_DAY:
             self.sales_since_day = 0
@@ -166,23 +186,57 @@ class GameState:
         self._check_end_conditions()
         return {"ok": True}
 
-    def _resolve_event(self, event: dict, product_key: str) -> None:
+    def _resolve_event(self, product_key: str, timing: str, roll: int, hot_faces: int) -> None:
         product = data.PRODUCT_BY_KEY[product_key]
-        cash_loss = int(self.cash * event["cash_loss_pct"])
-        self.cash = max(0, self.cash - cash_loss)
-        self.life = max(0, self.life - event["life_loss"])
-        self.debt += event["debt_gain"]
-        lost_qty = int(self.inventory[product_key] * event["inventory_loss_pct"])
-        self.inventory[product_key] = max(0, self.inventory[product_key] - lost_qty)
+        die1, die2 = random.randint(1, 6), random.randint(1, 6)
+        event = data.DICE_SUM_TO_EVENT[die1 + die2]
+        outcomes = event["outcomes"]
+        outcome = random.choices(outcomes, weights=[o["weight"] for o in outcomes])[0]
 
-        detail = [event["notice"]]
+        cash_loss = 0
+        if "cash_loss_pct_range" in outcome:
+            pct = random.uniform(*outcome["cash_loss_pct_range"])
+            cash_loss = int(self.cash * pct)
+            self.cash = max(0, self.cash - cash_loss)
+        if "cash_flat_range" in outcome:
+            flat = random.randint(*outcome["cash_flat_range"])
+            flat = min(flat, self.cash)  # a flat fine can't take cash you don't have
+            cash_loss += flat
+            self.cash = max(0, self.cash - flat)
+
+        lost_qty = 0
+        if "inventory_loss_pct_range" in outcome:
+            pct = random.uniform(*outcome["inventory_loss_pct_range"])
+            lost_qty = int(self.inventory[product_key] * pct)
+            self.inventory[product_key] = max(0, self.inventory[product_key] - lost_qty)
+
+        debt_gain = 0
+        if "debt_gain_range" in outcome:
+            debt_gain = random.randint(*outcome["debt_gain_range"])
+            self.debt += debt_gain
+
+        life_loss = 0
+        if "life_loss_range" in outcome:
+            life_loss = random.randint(*outcome["life_loss_range"])
+            self.life = max(0, self.life - life_loss)
+
+        lede = (
+            "Ambushed before the deal could close! "
+            if timing == "pre"
+            else "Caught on the way out! "
+        )
+        detail = [
+            f"{lede}[triggered {roll}/{hot_faces} on the d{data.DICE_SIDES}, "
+            f"rolled {die1}+{die2}={die1 + die2} → {event['name']}] {outcome['notice']}"
+        ]
         if cash_loss:
             detail.append(f"Lost ${cash_loss:,}.")
         if lost_qty:
             detail.append(f"Lost {lost_qty}x {product.name}.")
-        if event["debt_gain"]:
-            detail.append(f"Slapped with ${event['debt_gain']:,} in debt.")
-        detail.append(f"({event['life_loss']} half-heart damage)")
+        if debt_gain:
+            detail.append(f"Slapped with ${debt_gain:,} in debt.")
+        if life_loss:
+            detail.append(f"({life_loss} half-heart damage)")
         self._log(" ".join(detail))
 
     def travel(self, dest_code: str) -> dict:
@@ -315,6 +369,8 @@ class GameState:
                     "lon": a.lon,
                     "is_current": a.code == self.location,
                     "airfare": None if a.code == self.location else airfare(self.location, a.code),
+                    "heat": self.heat_faces(a.code),
+                    "heat_max": data.DICE_SIDES,
                 }
             )
         products = []

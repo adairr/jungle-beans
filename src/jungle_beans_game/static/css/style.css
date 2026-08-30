@@ -98,6 +98,26 @@ button, select, input {
 .airports-list li.current { background: var(--yellow); color: var(--ink); }
 .airports-list li.selected { border-color: var(--maroon); }
 
+.heat-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: normal;
+  font-style: normal;
+  padding: 1px 5px;
+  border-radius: 8px;
+  margin-left: 4px;
+}
+.heat-badge.heat-calm { background: #cfe6c2; color: #2c4a1e; }
+.heat-badge.heat-warm { background: #f3dd8a; color: #4a3a10; }
+.heat-badge.heat-hot { background: #f0aa5e; color: #4a2400; }
+.heat-badge.heat-extreme { background: #e2645a; color: #3a0a06; }
+
+.tooltip-row.heat-line { font-weight: bold; margin-bottom: 4px; padding-bottom: 3px; border-bottom: 1px solid rgba(0,0,0,0.2); }
+.tooltip-row.heat-line.heat-calm { color: #2c4a1e; }
+.tooltip-row.heat-line.heat-warm { color: #4a3a10; }
+.tooltip-row.heat-line.heat-hot { color: #7a3a00; }
+.tooltip-row.heat-line.heat-extreme { color: #8a1a10; }
+
 .market-subtitle { margin: 0 0 6px 0; font-size: 0.72rem; font-style: normal; font-weight: normal; opacity: 0.75; }
 .market-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
 .market-table th { text-align: left; font-style: italic; padding-bottom: 4px; }

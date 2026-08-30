@@ -19,6 +19,23 @@ Then open http://127.0.0.1:5050 in Chrome, Safari, or Edge. The map tiles
 load live from OpenStreetMap, so an internet connection is needed for the
 map to render (everything else works fully offline).
 
+Each browser gets its own isolated game via a session cookie — safe to
+have multiple people play the same running instance at once (e.g. once
+hosted for friends), with no separate "local" vs "hosted" mode needed.
+
+Debug/auto-reload is on by default (handy for local development); set
+`FLASK_DEBUG=0` to turn it off. For a real deployment, don't use this dev
+server at all — run it under a production WSGI server instead:
+
+```bash
+uv run waitress-serve --host=127.0.0.1 --port=5050 jungle_beans_game.app:app
+```
+
+(`waitress` works on Windows, unlike `gunicorn` — relevant if hosting from
+a Windows box.) Also set a fixed `SECRET_KEY` env var for a real deployment
+so player sessions survive a server restart, e.g.
+`SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_hex(32))")`.
+
 ## Gameplay notes
 
 - Start in São Paulo (GRU) with $5,000, 5 full life hearts, and an empty bag.
@@ -87,7 +104,10 @@ map to render (everything else works fully offline).
   distribution network, not just one lucrative route. Hit 0 life and it's
   game over.
 - **Save** snapshots the current game to a named JSON file under `saves/`
-  (gitignored); **Load** restores one.
+  (gitignored); **Load** restores one. Save files aren't scoped per player —
+  fine solo, but if hosting for multiple people, two players saving under
+  the same name will collide. Not yet fixed; a quick follow-up if it comes
+  up (prefix the filename with the session's player id).
 
 ## Design decisions not fully spelled out in the original notes
 

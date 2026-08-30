@@ -78,7 +78,7 @@ button, select, input {
 .notices-panel { grid-area: notices; display: flex; flex-direction: column; }
 .airports-panel { grid-area: airports; display: flex; flex-direction: column; }
 .market-panel { grid-area: market; display: flex; flex-direction: column; overflow-y: auto; }
-.map-panel { grid-area: map; display: flex; padding: 4px; position: relative; }
+.map-panel { grid-area: map; display: flex; padding: 4px; position: relative; isolation: isolate; }
 .wallet-panel { grid-area: wallet; display: flex; flex-direction: column; justify-content: center; }
 .win-progress { margin: 4px 0 0 0; font-size: 0.72rem; font-style: normal; font-weight: normal; opacity: 0.8; }
 

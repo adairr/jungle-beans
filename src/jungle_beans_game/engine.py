@@ -72,6 +72,14 @@ class GameState:
         self.drift: dict[str, dict[str, float]] = {
             a.code: {p.key: 0.0 for p in data.PRODUCTS} for a in data.AIRPORTS
         }
+        # Player-driven supply/demand pressure, updated on its own faster
+        # cadence — see SUPPLY_DEMAND_* in data.py.
+        self.supply_pressure: dict[str, dict[str, float]] = {
+            a.code: {p.key: 0.0 for p in data.PRODUCTS} for a in data.AIRPORTS
+        }
+        self.volume_since_eval: dict[str, dict[str, int]] = {
+            a.code: {p.key: 0 for p in data.PRODUCTS} for a in data.AIRPORTS
+        }
         # Temporary per-cycle "market shock" applied to 3 random airports.
         self.shock: dict[str, float] = {}
         self._apply_shock()
@@ -115,7 +123,8 @@ class GameState:
         modifier = self.airport_modifier.get(airport_code, 0.0)
         drift = self.drift.get(airport_code, {}).get(product_key, 0.0)
         shock = self.shock.get(airport_code, 0.0)
-        price = product.base_price * (1 + modifier) * (1 + drift) * (1 + shock)
+        pressure = self.supply_pressure.get(airport_code, {}).get(product_key, 0.0)
+        price = product.base_price * (1 + modifier) * (1 + drift) * (1 + shock) * (1 + pressure)
         if airport_code == self.price_discount_airport:
             price *= 1 - data.PINEAPPLE_EXPRESS["price_discount_pct"]
         return max(5, int(round(price)))
@@ -177,6 +186,7 @@ class GameState:
             return {"ok": False, "error": f"Not enough cash. {product.name} x{qty} costs ${cost:,}."}
         self.cash -= cost
         self.inventory[product_key] += qty
+        self.volume_since_eval[self.location][product_key] += qty
         self._log(f"Bought {qty}x {product.name} for ${cost:,} at {self._airport_name()}.")
         return {"ok": True}
 
@@ -204,6 +214,7 @@ class GameState:
             self.cash += revenue
             self.sales_count += 1
             self.sales_by_airport[self.location] = self.sales_by_airport.get(self.location, 0) + qty
+            self.volume_since_eval[self.location][product_key] -= qty
             self._log(f"Sold {qty}x {product.name} for ${revenue:,} at {self._airport_name()}.")
 
             post_roll = random.randint(1, data.DICE_SIDES)
@@ -333,12 +344,11 @@ class GameState:
         roll = random.randint(1, 6)
         if roll > data.AIRPORT_PENALTY_FACES:
             return
-        self.life = max(0, self.life - data.AIRPORT_PENALTY_LIFE_LOSS)
+        intensity = data.LEVEL_INTENSITY_MULTIPLIER.get(self.level, 1.0)
+        life_loss = max(1, int(round(data.AIRPORT_PENALTY_LIFE_LOSS * intensity)))
+        self.life = max(0, self.life - life_loss)
         notice = data.AIRPORT_PENALTY_NOTICE[self.location]
-        self._log(
-            f"[rolled {roll}/6 on the d6] {notice} "
-            f"({data.AIRPORT_PENALTY_LIFE_LOSS} half-heart damage)"
-        )
+        self._log(f"[rolled {roll}/6 on the d6] {notice} ({life_loss} half-heart damage)")
 
     def _advance_day(self) -> None:
         old_level = self.level
@@ -349,12 +359,24 @@ class GameState:
             self.debt -= payment
             if self.debt > 0:
                 self.debt = int(self.debt * 1.05)
+        if self.day % data.SUPPLY_DEMAND_EVAL_DAYS == 0:
+            self._evaluate_supply_demand()
         if self.day % data.PRICE_REFRESH_DAYS == 0:
             self._refresh_prices()
         if self.level > old_level:
             unlocked = [p for p in data.PRODUCTS if p.unlock_level == self.level]
             names = ", ".join(p.name for p in unlocked) or "new tiers"
             self._log(f"Reputation grows — you've reached level {self.level}! {names} unlocked.")
+
+    def _evaluate_supply_demand(self) -> None:
+        cap = data.SUPPLY_DEMAND_CAP
+        for airport_code, volumes in self.volume_since_eval.items():
+            pressures = self.supply_pressure[airport_code]
+            for product_key, net_units in volumes.items():
+                delta = net_units * data.SUPPLY_DEMAND_UNIT_IMPACT
+                new_pressure = pressures[product_key] * data.SUPPLY_DEMAND_DECAY + delta
+                pressures[product_key] = max(-cap, min(cap, new_pressure))
+                volumes[product_key] = 0
 
     def _refresh_prices(self) -> None:
         for airport_drift in self.drift.values():
@@ -418,6 +440,8 @@ class GameState:
             "airport_modifier": self.airport_modifier,
             "drift": self.drift,
             "shock": self.shock,
+            "supply_pressure": self.supply_pressure,
+            "volume_since_eval": self.volume_since_eval,
             "regional_fare": self.regional_fare,
             "saved_at": datetime.now(timezone.utc).isoformat(),
         }
@@ -445,6 +469,12 @@ class GameState:
         state.airport_modifier = payload["airport_modifier"]
         state.drift = payload["drift"]
         state.shock = payload["shock"]
+        state.supply_pressure = payload.get(
+            "supply_pressure", {a.code: {p.key: 0.0 for p in data.PRODUCTS} for a in data.AIRPORTS}
+        )
+        state.volume_since_eval = payload.get(
+            "volume_since_eval", {a.code: {p.key: 0 for p in data.PRODUCTS} for a in data.AIRPORTS}
+        )
         state.regional_fare = payload.get("regional_fare") or cls._roll_regional_fares()
         # Treat an already-won loaded save as already recorded, so saving and
         # reloading a win can't be used to farm repeat leaderboard entries.

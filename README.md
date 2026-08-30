@@ -62,6 +62,17 @@ so player sessions survive a server restart, e.g.
   ~90% of the listed price (a dealer's cut) — buying and instantly reselling
   the same product at the same airport is always a small loss, so real
   profit has to come from genuine arbitrage or a price swing.
+- Your own trading moves prices too: buying up a product nudges its price
+  up at that airport (you're depleting local supply), selling floods the
+  market and pushes it down — separate from and faster-updating than the
+  general market drift, and it decays back toward normal if you stop
+  trading a product there. Bounded so it can't run away (`SUPPLY_DEMAND_*`
+  in `data.py`).
+- Every arrival carries a small, flat, flavor-text mishap risk (a snake
+  bite at ATL, food poisoning at ORD, etc. — one per airport) independent
+  of level or market heat, scaled down at level 1 and back to full strength
+  from level 2 on (`AIRPORT_PENALTY_*` in `data.py`). Mobster protection
+  blocks it same as it blocks sale-triggered challenges.
 - Every airport has a **heat** level (0-12, shown as a 🔥 badge in the
   Airports list and on map hover) driven by how far above baseline its
   current prices are running — the better the deal, the more attention it's

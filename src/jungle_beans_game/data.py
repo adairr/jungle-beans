@@ -286,6 +286,30 @@ HEAT_SENSITIVITY = 6
 # traveling to a better market or waiting out a price swing.
 SELL_SPREAD_PCT = 0.10
 
+# Supply/demand: buying or selling a product at an airport nudges that
+# product's local price, evaluated on a faster cadence
+# (SUPPLY_DEMAND_EVAL_DAYS) than the general market refresh
+# (PRICE_REFRESH_DAYS) — this is the player's own recent trading talking,
+# not world noise. Two-sided: buying up local supply pushes price up
+# (demand), dumping product pushes it down (oversupply); same mechanism,
+# opposite sign of net volume. Scoped to airport+product only, matching how
+# `drift` already works, so a flooded product doesn't tank everything else
+# on sale at that airport.
+SUPPLY_DEMAND_EVAL_DAYS = 2
+# Price-fraction shift per unit of net (bought - sold) volume since the
+# last eval, before decay/clamp. Sized against the qty the greedy Monte
+# Carlo bot routinely trades (tens of units per sale) so a real flood
+# moves price meaningfully while a one- or two-unit purchase barely
+# registers.
+SUPPLY_DEMAND_UNIT_IMPACT = 0.006
+# Existing pressure decays toward 0 by this factor every eval, active
+# trading or not — an airport the player stops visiting gradually heals
+# instead of staying flooded/starved forever.
+SUPPLY_DEMAND_DECAY = 0.7
+# Clamp so sustained flooding/hoarding can't push a price to near-zero or
+# through the roof — same order of magnitude as the drift clamp (±0.4).
+SUPPLY_DEMAND_CAP = 0.35
+
 AIRFARE_BASE_FEE = 75
 AIRFARE_PER_KM = 0.06
 

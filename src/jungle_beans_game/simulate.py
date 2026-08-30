@@ -179,6 +179,7 @@ def main() -> None:
     parser.add_argument("--episodes", type=int, default=500)
     parser.add_argument("--price-multiplier", type=float, default=1.0)
     parser.add_argument("--starting-cash", type=int, default=None)
+    parser.add_argument("--win-net-worth", type=int, default=None)
     parser.add_argument("--heat-base-faces", type=int, default=None, help="baseline risk out of 12 at a calm market")
     parser.add_argument("--heat-sensitivity", type=float, default=None, help="extra faces per 100% price premium")
     parser.add_argument("--sell-spread", type=float, default=None, help="e.g. 0.10 for a 10% spread")
@@ -195,6 +196,8 @@ def main() -> None:
     overrides = {}
     if args.starting_cash is not None:
         overrides["STARTING_CASH"] = args.starting_cash
+    if args.win_net_worth is not None:
+        overrides["WIN_NET_WORTH"] = args.win_net_worth
     if args.heat_base_faces is not None:
         overrides["HEAT_BASE_FACES"] = args.heat_base_faces
     if args.heat_sensitivity is not None:

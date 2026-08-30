@@ -57,7 +57,7 @@ Then open http://127.0.0.1:5050 in Chrome, Safari, or Edge.
   (day 3 = Bean Gummies, day 6 = Bean IV, day 9 = Bean Oil).
 - Debt is paid down automatically (20%/day) from your cash when you have
   some; unpaid debt accrues 5% interest per day.
-- Reach $50,000 net worth to win; hit 0 life and it's game over.
+- Reach $15,000 net worth to win; hit 0 life and it's game over.
 - **Save** snapshots the current game to a named JSON file under `saves/`
   (gitignored); **Load** restores one.
 

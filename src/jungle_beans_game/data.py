@@ -192,7 +192,7 @@ STARTING_CASH = 5000
 STARTING_LIFE = 10  # half-heart units; 10 == 5 full hearts
 SALES_PER_DAY = 3
 PRICE_REFRESH_DAYS = 5
-WIN_NET_WORTH = 50000
+WIN_NET_WORTH = 15000
 
 # Player level (and product unlocks) advance with elapsed in-game days, not
 # sales count — a new tier every LEVEL_UP_INTERVAL_DAYS days, capped at

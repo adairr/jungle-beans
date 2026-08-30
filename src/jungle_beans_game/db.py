@@ -41,6 +41,14 @@ CREATE TABLE IF NOT EXISTS wins (
     net_worth INTEGER NOT NULL,
     won_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS access_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    email TEXT NOT NULL,
+    event TEXT NOT NULL,
+    ip_address TEXT,
+    at TEXT NOT NULL
+);
 """
 
 
@@ -121,6 +129,24 @@ def record_win(user_id: int, days: int, net_worth: int) -> None:
             "INSERT INTO wins (user_id, days, net_worth, won_at) VALUES (?, ?, ?, ?)",
             (user_id, days, net_worth, datetime.now(timezone.utc).isoformat()),
         )
+
+
+def log_access(user_id: int, email: str, event: str, ip_address: str | None) -> None:
+    """event: "register" or "login" — who tried the game, and when."""
+    with _connect() as conn:
+        conn.execute(
+            "INSERT INTO access_log (user_id, email, event, ip_address, at) VALUES (?, ?, ?, ?, ?)",
+            (user_id, email, event, ip_address, datetime.now(timezone.utc).isoformat()),
+        )
+
+
+def access_log(limit: int = 200) -> list[dict]:
+    with _connect() as conn:
+        rows = conn.execute(
+            "SELECT email, event, ip_address, at FROM access_log ORDER BY at DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+    return [dict(r) for r in rows]
 
 
 def leaderboard(limit: int = 25) -> list[dict]:

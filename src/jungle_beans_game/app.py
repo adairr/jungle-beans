@@ -90,6 +90,7 @@ def api_register():
     session.permanent = True
     session["user_id"] = result["user_id"]
     session["email"] = result["email"]
+    db.log_access(result["user_id"], result["email"], "register", request.remote_addr)
     return jsonify({"ok": True})
 
 
@@ -102,6 +103,7 @@ def api_login():
     session.permanent = True
     session["user_id"] = result["user_id"]
     session["email"] = result["email"]
+    db.log_access(result["user_id"], result["email"], "login", request.remote_addr)
     return jsonify({"ok": True})
 
 

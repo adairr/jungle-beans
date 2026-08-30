@@ -17,6 +17,11 @@ def index():
     return render_template("index.html", sell_pct=sell_pct)
 
 
+@app.get("/about")
+def about():
+    return render_template("about.html")
+
+
 @app.get("/api/state")
 def api_state():
     return jsonify(GAME.public_state())

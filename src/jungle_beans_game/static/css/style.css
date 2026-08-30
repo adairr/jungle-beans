@@ -56,8 +56,24 @@ button, select, input {
   min-height: 0;
 }
 
-.logo-panel { grid-area: logo; }
-.logo-panel h1 { color: var(--yellow); font-size: 2rem; }
+.logo-panel {
+  grid-area: logo;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.logo-panel h1 { color: var(--yellow); font-size: 2rem; margin: 0; }
+.catchphrase-link {
+  font-style: italic;
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--cream);
+  text-decoration: none;
+  border-bottom: 2px solid var(--cream);
+  white-space: nowrap;
+}
+.catchphrase-link:hover { color: var(--yellow); border-color: var(--yellow); }
 
 .notices-panel { grid-area: notices; display: flex; flex-direction: column; }
 .airports-panel { grid-area: airports; display: flex; flex-direction: column; }

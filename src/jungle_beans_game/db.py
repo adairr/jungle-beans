@@ -120,8 +120,38 @@ def _migrate(conn: sqlite3.Connection) -> None:
     conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_name ON users(name)")
 
     log_cols = _table_info(conn, "access_log")
-    if "name" not in log_cols:
-        conn.execute("ALTER TABLE access_log ADD COLUMN name TEXT")
+    # Same story as users.email above: the original access_log had
+    # `email TEXT NOT NULL`, which ALTER TABLE can't relax, so a plain
+    # ADD COLUMN for `name` isn't enough on its own — every future insert
+    # with email=NULL (the whole point of making it optional) would still
+    # violate the old NOT NULL constraint on the email column itself.
+    log_needs_rebuild = "name" not in log_cols or (
+        "email" in log_cols and log_cols["email"]["notnull"]
+    )
+    if log_needs_rebuild:
+        conn.execute("ALTER TABLE access_log RENAME TO access_log_old")
+        conn.execute(
+            """CREATE TABLE access_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL REFERENCES users(id),
+                name TEXT,
+                email TEXT,
+                event TEXT NOT NULL,
+                ip_address TEXT,
+                at TEXT NOT NULL
+            )"""
+        )
+        if "name" in log_cols:
+            conn.execute(
+                """INSERT INTO access_log (id, user_id, name, email, event, ip_address, at)
+                   SELECT id, user_id, name, email, event, ip_address, at FROM access_log_old"""
+            )
+        else:
+            conn.execute(
+                """INSERT INTO access_log (id, user_id, email, event, ip_address, at)
+                   SELECT id, user_id, email, event, ip_address, at FROM access_log_old"""
+            )
+        conn.execute("DROP TABLE access_log_old")
         conn.execute("UPDATE access_log SET name = email WHERE name IS NULL")
 
 

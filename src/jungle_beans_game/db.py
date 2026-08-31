@@ -152,7 +152,14 @@ def _migrate(conn: sqlite3.Connection) -> None:
                    SELECT id, user_id, email, event, ip_address, at FROM access_log_old"""
             )
         conn.execute("DROP TABLE access_log_old")
-        conn.execute("UPDATE access_log SET name = email WHERE name IS NULL")
+        # Backfill from the *actual* registered name (via user_id), not the
+        # raw email — these historical rows predate the name column, same
+        # as the users.email-derived backfill above.
+        conn.execute(
+            """UPDATE access_log SET name = (
+                   SELECT users.name FROM users WHERE users.id = access_log.user_id
+               ) WHERE name IS NULL"""
+        )
 
 
 def init_db() -> None:

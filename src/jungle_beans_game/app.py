@@ -71,6 +71,14 @@ def index():
     return render_template("index.html", sell_pct=sell_pct, email=session.get("email"))
 
 
+@app.get("/mobile")
+def mobile():
+    if current_user_id() is None:
+        return render_template("login.html")
+    sell_pct = round(100 * (1 - data.SELL_SPREAD_PCT))
+    return render_template("mobile.html", sell_pct=sell_pct, email=session.get("email"))
+
+
 @app.get("/about")
 def about():
     return render_template("about.html")

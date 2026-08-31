@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Jungle Beans</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/mobile.css') }}" />
+</head>
+<body class="m-body">
+  <div id="game-over-overlay" class="overlay hidden">
+    <div class="overlay-box">
+      <h2 id="overlay-title">Game Over</h2>
+      <p id="overlay-message"></p>
+      <button id="overlay-reset-btn">Start a new run</button>
+    </div>
+  </div>
+
+  <header class="m-header">
+    <h1>Jungle Beans</h1>
+    <div class="m-header-links">
+      <a href="{{ url_for('about') }}" target="_blank" rel="noopener">Live the Bean!</a>
+      <a href="{{ url_for('leaderboard_page') }}" target="_blank" rel="noopener">Leaderboard</a>
+      <a href="{{ url_for('index') }}">Desktop version</a>
+    </div>
+    <p class="m-account">{{ email }} &middot; <a href="#" id="logout-link">Log out</a></p>
+  </header>
+
+  <section class="m-panel m-stats">
+    <div class="m-stats-row">
+      <span>Day <b id="day-value">0</b></span>
+      <span id="level-value">Lvl 1</span>
+    </div>
+    <div class="m-stats-row">
+      <span>Wallet <b id="wallet-value">$0</b></span>
+      <span>Debt <b id="debt-value">$0</b></span>
+    </div>
+    <div id="life-hearts" class="life-hearts"></div>
+    <p class="win-progress">Net worth <span id="net-worth-value">$0</span> / <span id="net-worth-goal">$0</span> goal
+      &middot; Airports <span id="airports-covered-value">0</span>/<span id="airports-total-value">0</span> sold</p>
+    <p id="status-effects" class="win-progress"></p>
+  </section>
+
+  <section class="m-panel m-actions">
+    <h2>Actions</h2>
+    <label class="m-field">Product
+      <select id="product-select"></select>
+    </label>
+    <label class="m-field">Qty
+      <input id="sale-qty" type="number" min="1" value="1" />
+    </label>
+    <button id="attempt-sale-btn" class="m-btn m-btn-primary">Attempt Sale</button>
+    <button id="travel-btn" class="m-btn m-btn-primary">Travel to Selected Airport</button>
+  </section>
+
+  <section class="m-panel m-map-panel">
+    <h2>Map</h2>
+    <div id="world-map"></div>
+  </section>
+
+  <section class="m-panel">
+    <h2>Airports</h2>
+    <ul id="airports-list" class="airports-list"></ul>
+  </section>
+
+  <section class="m-panel">
+    <h2>Market Prices</h2>
+    <p class="market-subtitle">Listed price to buy. Selling nets ~{{ sell_pct }}% (dealer's cut).</p>
+    <table class="market-table">
+      <thead>
+        <tr><th>Product</th><th>Price</th><th>Own</th><th>Qty</th><th></th></tr>
+      </thead>
+      <tbody id="market-body"></tbody>
+    </table>
+  </section>
+
+  <section class="m-panel">
+    <h2>Notices</h2>
+    <ul id="notices-list" class="notices-list"></ul>
+  </section>
+
+  <section class="m-panel m-utility">
+    <h2>Game</h2>
+    <button id="reset-btn" class="m-btn">Reset Game</button>
+    <div class="m-field-row">
+      <input id="save-name" type="text" placeholder="save name" />
+      <button id="save-btn" class="m-btn">Save</button>
+    </div>
+    <div class="m-field-row">
+      <select id="load-select"></select>
+      <button id="load-btn" class="m-btn">Load</button>
+    </div>
+  </section>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="{{ url_for('static', filename='js/game.js') }}"></script>
+</body>
+</html>

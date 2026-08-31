@@ -27,3 +27,7 @@ document.getElementById("auth-form").addEventListener("submit", (evt) => {
 document.getElementById("register-btn").addEventListener("click", () => {
   submitAuth("/api/register");
 });
+
+document.getElementById("reset-password-btn").addEventListener("click", () => {
+  submitAuth("/api/reset-password");
+});

@@ -200,6 +200,26 @@ def authenticate(name: str, password: str) -> dict:
     return {"ok": True, "user_id": row["id"], "name": name, "email": row["email"]}
 
 
+def reset_password(name: str, new_password: str) -> dict:
+    """No old-password or email verification — same trust level as
+    registration itself (this is a small friends-and-colleagues app, not a
+    bank). Whoever knows an account's name can set it a new password."""
+    name = name.strip()
+    if not name:
+        return {"ok": False, "error": "Enter your name."}
+    if len(new_password) < 4:
+        return {"ok": False, "error": "New password must be at least 4 characters."}
+    with _connect() as conn:
+        row = conn.execute("SELECT id, email FROM users WHERE name = ?", (name,)).fetchone()
+        if row is None:
+            return {"ok": False, "error": "No account with that name."}
+        conn.execute(
+            "UPDATE users SET password_hash = ? WHERE id = ?",
+            (generate_password_hash(new_password), row["id"]),
+        )
+    return {"ok": True, "user_id": row["id"], "name": name, "email": row["email"]}
+
+
 def save_game(user_id: int, name: str, game_dict: dict) -> str:
     safe_name = "".join(c for c in name.strip() if c.isalnum() or c in "-_ ").strip() or "save"
     with _connect() as conn:

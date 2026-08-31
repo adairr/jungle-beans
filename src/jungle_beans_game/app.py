@@ -123,6 +123,19 @@ def api_login():
     return jsonify({"ok": True})
 
 
+@app.post("/api/reset-password")
+def api_reset_password():
+    payload = request.get_json(force=True) or {}
+    result = db.reset_password(payload.get("name", ""), payload.get("password", ""))
+    if not result["ok"]:
+        return jsonify(result)
+    session.permanent = True
+    session["user_id"] = result["user_id"]
+    session["name"] = result["name"]
+    db.log_access(result["user_id"], result["name"], result.get("email"), "password_reset", request.remote_addr)
+    return jsonify({"ok": True})
+
+
 @app.post("/api/logout")
 def api_logout():
     session.clear()

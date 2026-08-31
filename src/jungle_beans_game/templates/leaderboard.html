@@ -20,15 +20,16 @@
       {% if rows %}
       <table class="leaderboard-table">
         <thead>
-          <tr><th>#</th><th>Player</th><th>Days</th><th>Net Worth</th></tr>
+          <tr><th>#</th><th>Player</th><th>Days</th><th>Net Worth</th><th>When</th></tr>
         </thead>
         <tbody>
           {% for row in rows %}
           <tr>
             <td>{{ loop.index }}</td>
-            <td>{{ row.email.split('@')[0] }}</td>
+            <td>{{ row.name }}</td>
             <td>{{ row.days }}</td>
             <td>${{ "{:,}".format(row.net_worth) }}</td>
+            <td>{{ row.won_at_display }}</td>
           </tr>
           {% endfor %}
         </tbody>

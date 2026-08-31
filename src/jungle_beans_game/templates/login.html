@@ -17,11 +17,14 @@
 
     <div class="panel login-panel">
       <h2>Log in or create an account</h2>
-      <p class="login-hint">Just an email and a password — no verification, nothing fancy. Your account is what keeps your progress, saves, and leaderboard wins tied to you.</p>
+      <p class="login-hint">Just a name and a password — no verification, nothing fancy. Your name is what shows up on the leaderboard, and keeps your progress and saves tied to you. Log in with the same name you registered with.</p>
 
       <form id="auth-form">
-        <label>Email
-          <input type="email" id="auth-email" required autocomplete="username" />
+        <label>Name
+          <input type="text" id="auth-name" required autocomplete="username" />
+        </label>
+        <label>Email <span class="login-optional">(optional, new accounts only)</span>
+          <input type="email" id="auth-email" autocomplete="email" />
         </label>
         <label>Password
           <input type="password" id="auth-password" required autocomplete="current-password" minlength="4" />

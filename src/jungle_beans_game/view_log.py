@@ -1,7 +1,8 @@
 """CLI viewer for who's tried the game — registrations and logins.
 
-Deliberately not a web page: it'd otherwise expose every player's email to
-anyone else who's logged in. Run it locally (or over SSH on the host):
+Deliberately not a web page: it'd otherwise expose every player's name/
+email to anyone else who's logged in. Run it locally (or over SSH on the
+host):
 
     uv run python -m jungle_beans_game.view_log
     uv run python -m jungle_beans_game.view_log --limit 50
@@ -24,10 +25,13 @@ def main() -> None:
         print("No access log entries yet.")
         return
 
-    print(f"{'When (UTC)':<26} {'Event':<10} {'Email':<30} IP")
-    print("-" * 80)
+    print(f"{'When (UTC)':<26} {'Event':<10} {'Name':<18} {'Email':<28} IP")
+    print("-" * 100)
     for row in rows:
-        print(f"{row['at']:<26} {row['event']:<10} {row['email']:<30} {row['ip_address'] or ''}")
+        print(
+            f"{row['at']:<26} {row['event']:<10} {(row['name'] or ''):<18} "
+            f"{(row['email'] or ''):<28} {row['ip_address'] or ''}"
+        )
 
 
 if __name__ == "__main__":

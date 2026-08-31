@@ -1,4 +1,5 @@
 async function submitAuth(endpoint) {
+  const name = document.getElementById("auth-name").value.trim();
   const email = document.getElementById("auth-email").value.trim();
   const password = document.getElementById("auth-password").value;
   const errorBox = document.getElementById("auth-error");
@@ -7,7 +8,7 @@ async function submitAuth(endpoint) {
   const res = await fetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ name, email, password }),
   });
   const result = await res.json();
   if (result.ok) {

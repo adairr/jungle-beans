@@ -21,6 +21,11 @@
   font-weight: 800;
   font-size: 0.85rem;
 }
+.login-optional {
+  font-weight: normal;
+  font-size: 0.75rem;
+  opacity: 0.75;
+}
 #auth-form input {
   font-family: inherit;
   font-style: normal;

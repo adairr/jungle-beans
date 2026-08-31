@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 import secrets
-from datetime import timedelta
+from datetime import datetime, timedelta
 from functools import wraps
 
 from flask import Flask, jsonify, render_template, request, session
@@ -51,7 +51,7 @@ def get_game() -> GameState:
 
 def _finalize(game: GameState) -> dict:
     """Record a leaderboard entry the moment a game is won, exactly once, and
-    attach the account-scoped bits (saves, email) that GameState itself has
+    attach the account-scoped bits (saves, name) that GameState itself has
     no business knowing about."""
     uid = current_user_id()
     if game.win and not game.win_recorded:
@@ -59,7 +59,7 @@ def _finalize(game: GameState) -> dict:
         game.win_recorded = True
     state = game.public_state()
     state["saves"] = db.list_saves(uid)
-    state["email"] = session.get("email")
+    state["name"] = session.get("name")
     return state
 
 
@@ -68,7 +68,7 @@ def index():
     if current_user_id() is None:
         return render_template("login.html")
     sell_pct = round(100 * (1 - data.SELL_SPREAD_PCT))
-    return render_template("index.html", sell_pct=sell_pct, email=session.get("email"))
+    return render_template("index.html", sell_pct=sell_pct, name=session.get("name"))
 
 
 @app.get("/mobile")
@@ -76,7 +76,7 @@ def mobile():
     if current_user_id() is None:
         return render_template("login.html")
     sell_pct = round(100 * (1 - data.SELL_SPREAD_PCT))
-    return render_template("mobile.html", sell_pct=sell_pct, email=session.get("email"))
+    return render_template("mobile.html", sell_pct=sell_pct, name=session.get("name"))
 
 
 @app.get("/about")
@@ -86,32 +86,40 @@ def about():
 
 @app.get("/leaderboard")
 def leaderboard_page():
-    return render_template("leaderboard.html", rows=db.leaderboard())
+    rows = db.leaderboard()
+    for row in rows:
+        try:
+            row["won_at_display"] = datetime.fromisoformat(row["won_at"]).strftime("%Y-%m-%d %H:%M UTC")
+        except ValueError:
+            row["won_at_display"] = row["won_at"]
+    return render_template("leaderboard.html", rows=rows)
 
 
 @app.post("/api/register")
 def api_register():
     payload = request.get_json(force=True) or {}
-    result = db.register_user(payload.get("email", ""), payload.get("password", ""))
+    result = db.register_user(
+        payload.get("name", ""), payload.get("password", ""), payload.get("email") or None
+    )
     if not result["ok"]:
         return jsonify(result)
     session.permanent = True
     session["user_id"] = result["user_id"]
-    session["email"] = result["email"]
-    db.log_access(result["user_id"], result["email"], "register", request.remote_addr)
+    session["name"] = result["name"]
+    db.log_access(result["user_id"], result["name"], result.get("email"), "register", request.remote_addr)
     return jsonify({"ok": True})
 
 
 @app.post("/api/login")
 def api_login():
     payload = request.get_json(force=True) or {}
-    result = db.authenticate(payload.get("email", ""), payload.get("password", ""))
+    result = db.authenticate(payload.get("name", ""), payload.get("password", ""))
     if not result["ok"]:
         return jsonify(result)
     session.permanent = True
     session["user_id"] = result["user_id"]
-    session["email"] = result["email"]
-    db.log_access(result["user_id"], result["email"], "login", request.remote_addr)
+    session["name"] = result["name"]
+    db.log_access(result["user_id"], result["name"], result.get("email"), "login", request.remote_addr)
     return jsonify({"ok": True})
 
 

@@ -241,6 +241,7 @@ function renderOverlay() {
     overlay.classList.remove("hidden");
     $("overlay-title").textContent = state.win ? "✈️🔥 YOU WIN! 🔥✈️" : "Game Over";
     $("overlay-message").textContent = state.game_over_reason;
+    $("overlay-leaderboard-link").classList.toggle("hidden", !state.win);
   } else {
     overlay.classList.add("hidden");
   }

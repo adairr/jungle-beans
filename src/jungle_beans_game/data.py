@@ -137,7 +137,8 @@ EVENTS: list[dict] = [
             {
                 "notice": "Mobsters send a message you'll feel for days.",
                 "weight": 1,
-                "life_loss_range": (3, 3),
+                "life_loss_range": (3, 3),  # 1.5 hearts
+                "intensity_exempt": True,  # always exactly 1.5 hearts, not 1-2 by level
             },
         ],
     },

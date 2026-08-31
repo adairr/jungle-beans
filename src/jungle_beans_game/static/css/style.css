@@ -264,3 +264,15 @@ button, select, input {
   cursor: pointer;
   font-size: 1rem;
 }
+.overlay-leaderboard-link {
+  display: block;
+  margin-top: 12px;
+  font-style: italic;
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--yellow);
+  text-decoration: none;
+  border-bottom: 2px solid var(--yellow);
+}
+.overlay-leaderboard-link.hidden { display: none; }
+.overlay-leaderboard-link:hover { color: #fff; border-color: #fff; }

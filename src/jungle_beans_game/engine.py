@@ -235,7 +235,16 @@ class GameState:
         event = data.DICE_SUM_TO_EVENT[die1 + die2]
         outcomes = event["outcomes"]
         outcome = random.choices(outcomes, weights=[o["weight"] for o in outcomes])[0]
-        intensity = data.LEVEL_INTENSITY_MULTIPLIER.get(self.level, 1.0)
+        # Some outcomes describe an absolute, fixed amount ("entire stock",
+        # "1.5 hearts") rather than something that should get gentler/harsher
+        # with level — those opt out of LEVEL_INTENSITY_MULTIPLIER entirely
+        # via intensity_exempt so they mean exactly what they say at every
+        # level, not just at level 3 (where the multiplier happens to be 1.0).
+        intensity = (
+            1.0
+            if outcome.get("intensity_exempt")
+            else data.LEVEL_INTENSITY_MULTIPLIER.get(self.level, 1.0)
+        )
 
         cash_loss = 0
         if "cash_loss_pct_range" in outcome:
@@ -250,8 +259,7 @@ class GameState:
 
         lost_qty = 0
         if "inventory_loss_pct_range" in outcome:
-            inv_intensity = 1.0 if outcome.get("intensity_exempt") else intensity
-            pct = min(1.0, random.uniform(*outcome["inventory_loss_pct_range"]) * inv_intensity)
+            pct = min(1.0, random.uniform(*outcome["inventory_loss_pct_range"]) * intensity)
             lost_qty = int(self.inventory[product_key] * pct)
             self.inventory[product_key] = max(0, self.inventory[product_key] - lost_qty)
 

@@ -47,17 +47,33 @@ const AIRPORT_PENALTY_SOUND = [
   [/blueish-purple berries/i, "chill_pluck.mp3"], // GRU
 ];
 
-const SELL_BIG_SALE_THRESHOLD = 500;
+const SELL_BIG_SALE_THRESHOLD = 2000;
+
+// Arrival field bonuses (see FIELD_BONUSES + Pineapple Express in data.py).
+// Field bonus 1 (mobster protection) is handled by the /mobster/i rule
+// above — every other bonus, none of which had a dedicated sound, gets
+// quick_jam.mp3.
+const FIELD_BONUS_SOUND = [
+  [/hippie commune/i, "quick_jam.mp3"], // hippie_donation
+  [/local government announces/i, "quick_jam.mp3"], // govt_support
+  [/spot the thief/i, "quick_jam.mp3"], // catch_thief
+  [/travel voucher/i, "quick_jam.mp3"], // travel_voucher
+  [/pineapple express/i, "quick_jam.mp3"], // Pineapple Express
+];
 
 function soundForNotice(text) {
   if (/shots fired/i.test(text)) return "machine_gun.mp3";
   if (/police seized|border agents/i.test(text)) return "sirens.mp3";
   if (/mobster/i.test(text)) return "la_vita.mp3";
 
+  for (const [pattern, sound] of FIELD_BONUS_SOUND) {
+    if (pattern.test(text)) return sound;
+  }
+
   const sold = text.match(/Sold \d+x .+ for \$([\d,]+) at/i);
   if (sold) {
     const amount = parseInt(sold[1].replace(/,/g, ""), 10);
-    return amount > SELL_BIG_SALE_THRESHOLD ? "funk_jam.mp3" : "money_counting.mp3";
+    return amount >= SELL_BIG_SALE_THRESHOLD ? "funk_jam.mp3" : "money_counting.mp3";
   }
 
   if (/^Day \d+ — Bought \d+x/i.test(text)) return "buy.mp3";

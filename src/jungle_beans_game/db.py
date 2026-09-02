@@ -30,7 +30,8 @@ CREATE TABLE IF NOT EXISTS users (
     name TEXT,
     email TEXT UNIQUE,
     password_hash TEXT NOT NULL,
-    created_at TEXT NOT NULL
+    created_at TEXT NOT NULL,
+    last_active_at TEXT
 );
 CREATE TABLE IF NOT EXISTS saves (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -95,7 +96,8 @@ def _migrate(conn: sqlite3.Connection) -> None:
                 name TEXT,
                 email TEXT UNIQUE,
                 password_hash TEXT NOT NULL,
-                created_at TEXT NOT NULL
+                created_at TEXT NOT NULL,
+                last_active_at TEXT
             )"""
         )
         if "name" in user_cols:
@@ -118,6 +120,11 @@ def _migrate(conn: sqlite3.Connection) -> None:
         )
         conn.execute("UPDATE users SET name = 'player' || id WHERE name IS NULL")
     conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_name ON users(name)")
+
+    # last_active_at is a plain nullable column, so a simple ADD COLUMN is
+    # enough here (no NOT NULL constraint to work around like name/email above).
+    if "last_active_at" not in _table_info(conn, "users"):
+        conn.execute("ALTER TABLE users ADD COLUMN last_active_at TEXT")
 
     log_cols = _table_info(conn, "access_log")
     # Same story as users.email above: the original access_log had
@@ -263,6 +270,27 @@ def log_access(user_id: int, name: str, email: str | None, event: str, ip_addres
             "INSERT INTO access_log (user_id, name, email, event, ip_address, at) VALUES (?, ?, ?, ?, ?, ?)",
             (user_id, name, email, event, ip_address, datetime.now(timezone.utc).isoformat()),
         )
+
+
+def touch_activity(user_id: int) -> None:
+    """Stamp the moment a logged-in player last hit any game API — the basis
+    for telling whether someone is actively playing right now."""
+    with _connect() as conn:
+        conn.execute(
+            "UPDATE users SET last_active_at = ? WHERE id = ?",
+            (datetime.now(timezone.utc).isoformat(), user_id),
+        )
+
+
+def activity_status(limit: int = 100) -> list[dict]:
+    with _connect() as conn:
+        rows = conn.execute(
+            """SELECT name, last_active_at FROM users
+               WHERE last_active_at IS NOT NULL
+               ORDER BY last_active_at DESC LIMIT ?""",
+            (limit,),
+        ).fetchall()
+    return [dict(r) for r in rows]
 
 
 def access_log(limit: int = 200) -> list[dict]:

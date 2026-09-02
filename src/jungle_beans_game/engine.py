@@ -167,7 +167,7 @@ class GameState:
     # ------------------------------------------------------------------ #
     def _log(self, message: str) -> None:
         self.notices.insert(0, f"Day {self.day} — {message}")
-        del self.notices[60:]
+        del self.notices[500:]
 
     # ------------------------------------------------------------------ #
     # Actions
@@ -216,6 +216,7 @@ class GameState:
             self.sales_by_airport[self.location] = self.sales_by_airport.get(self.location, 0) + qty
             self.volume_since_eval[self.location][product_key] -= qty
             self._log(f"Sold {qty}x {product.name} for ${revenue:,} at {self._airport_name()}.")
+            self._check_beverage_generosity(product_key, qty)
 
             post_roll = random.randint(1, data.DICE_SIDES)
             if post_roll <= hot_faces:
@@ -347,17 +348,32 @@ class GameState:
                     f"{data.PINEAPPLE_EXPRESS['notice']} Prices here are down {pct}% while you stay."
                 )
 
+    def _check_beverage_generosity(self, product_key: str, qty: int) -> None:
+        if product_key != data.BEVERAGE_GENEROSITY_PRODUCT:
+            return
+        if qty <= data.BEVERAGE_GENEROSITY_MIN_QTY:
+            return
+        roll = random.randint(1, data.BEVERAGE_GENEROSITY_DIE_SIDES)
+        if roll > data.BEVERAGE_GENEROSITY_FACES:
+            return
+        gain = data.BEVERAGE_GENEROSITY_LIFE_GAIN
+        self.life = min(data.STARTING_LIFE, self.life + gain)
+        self._log(f"[rolled {roll}/{data.BEVERAGE_GENEROSITY_DIE_SIDES}] {data.BEVERAGE_GENEROSITY_NOTICE} ({gain} half-heart restored)")
+
     def _check_airport_penalty(self) -> None:
         if self.location == self.protected_airport:
             return
-        roll = random.randint(1, 6)
+        die_sides = data.AIRPORT_PENALTY_DIE_SIDES
+        roll = random.randint(1, die_sides)
         if roll > data.AIRPORT_PENALTY_FACES:
             return
         intensity = data.LEVEL_INTENSITY_MULTIPLIER.get(self.level, 1.0)
-        life_loss = max(1, int(round(data.AIRPORT_PENALTY_LIFE_LOSS * intensity)))
+        lo, hi = data.AIRPORT_PENALTY_LIFE_LOSS_RANGE
+        base_loss = random.randint(lo, hi)
+        life_loss = max(1, int(round(base_loss * intensity)))
         self.life = max(0, self.life - life_loss)
         notice = data.AIRPORT_PENALTY_NOTICE[self.location]
-        self._log(f"[rolled {roll}/6 on the d6] {notice} ({life_loss} half-heart damage)")
+        self._log(f"[rolled {roll}/{die_sides}] {notice} ({life_loss} half-heart damage)")
 
     def _advance_day(self) -> None:
         old_level = self.level
@@ -546,7 +562,7 @@ class GameState:
             "airports": airports,
             "products": products,
             "airport_prices": airport_prices,
-            "notices": self.notices[:20],
+            "notices": self.notices,
             "game_over": self.game_over,
             "win": self.win,
             "game_over_reason": self.game_over_reason,

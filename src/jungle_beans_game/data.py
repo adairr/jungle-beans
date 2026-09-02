@@ -74,9 +74,9 @@ PRODUCT_BY_KEY: dict[str, Product] = {p.key: p for p in PRODUCTS}
 # pick — 2d6 is a bell curve (7 is 6x likelier than 2 or 12), so pairing each
 # event with a symmetric pair of sums gives 6 naturally different rarities
 # instead of an even split. Ordered here mildest/most-common to
-# most-severe/rarest: Shots Fired's 3-heart hit only shows up on the {2,12}
-# tail (5.6%), so the worst outcome stays a rare gut-punch rather than an
-# every-other-roll coinflip.
+# most-severe/rarest: Shots Fired only shows up on the {2,12} tail (5.6%),
+# so the worst outcome stays a rare gut-punch rather than an every-other-roll
+# coinflip.
 EVENTS: list[dict] = [
     {
         "key": "extreme_weather",
@@ -168,7 +168,7 @@ EVENTS: list[dict] = [
             {
                 "notice": "Shots fired on the tarmac — you barely made it out alive.",
                 "weight": 1,
-                "life_loss_range": (6, 6),
+                "life_loss_range": (2, 2),
             },
         ],
     },
@@ -255,8 +255,18 @@ AIRPORT_PENALTY_NOTICE: dict[str, str] = {
     "IST": "That kebab turned out to be sourced from sickly hedgehog meat.",
     "GRU": "You ate some suspicious blueish-purple berries along the trail.",
 }
-AIRPORT_PENALTY_FACES = 1  # out of a d6 (1/6 ≈ 16.7% chance per arrival)
-AIRPORT_PENALTY_LIFE_LOSS = 2  # half-heart units — one full heart
+AIRPORT_PENALTY_DIE_SIDES = 6
+AIRPORT_PENALTY_FACES = 1  # out of the die above (1/6 ≈ 16.7% chance per arrival)
+AIRPORT_PENALTY_LIFE_LOSS_RANGE = (2, 2)  # half-heart units; (2, 2) = a flat full heart
+
+# Selling a big batch of bean beverages in one go has a chance of the
+# contact sharing a drink with you, replenishing a bit of life.
+BEVERAGE_GENEROSITY_PRODUCT = "bean_beverage"
+BEVERAGE_GENEROSITY_MIN_QTY = 25  # must sell MORE than this many in one sale
+BEVERAGE_GENEROSITY_DIE_SIDES = 4
+BEVERAGE_GENEROSITY_FACES = 1  # out of the die above (1/4 chance per qualifying sale)
+BEVERAGE_GENEROSITY_LIFE_GAIN = 1  # half-heart units
+BEVERAGE_GENEROSITY_NOTICE = "Sale went so well that the contact shared a bean beverage with you."
 
 PINEAPPLE_EXPRESS: dict = {
     "key": "pineapple_express",

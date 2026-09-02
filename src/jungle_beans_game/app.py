@@ -35,8 +35,10 @@ def current_user_id() -> int | None:
 def login_required(view):
     @wraps(view)
     def wrapped(*args, **kwargs):
-        if current_user_id() is None:
+        uid = current_user_id()
+        if uid is None:
             return jsonify({"ok": False, "error": "Not logged in."}), 401
+        db.touch_activity(uid)
         return view(*args, **kwargs)
 
     return wrapped

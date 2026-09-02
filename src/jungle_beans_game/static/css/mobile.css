@@ -48,6 +48,7 @@
   padding: 12px 14px;
   margin-bottom: 12px;
 }
+.m-notices-panel { position: relative; }
 .m-panel h2 {
   font-size: 1.1rem;
   margin: 0 0 8px 0;

@@ -13,6 +13,7 @@
       <h2 id="overlay-title">Game Over</h2>
       <p id="overlay-message"></p>
       <button id="overlay-reset-btn">Start a new run</button>
+      <button id="overlay-dashboard-btn">Review notices</button>
       <a id="overlay-leaderboard-link" href="{{ url_for('leaderboard_page') }}" target="_blank" rel="noopener" class="overlay-leaderboard-link hidden">View Leaderboard</a>
     </div>
   </div>
@@ -20,6 +21,7 @@
   <div class="dashboard">
     <div class="panel logo-panel">
       <h1>Jungle Beans</h1>
+      <span class="version-tag">v2.0</span>
       <a class="catchphrase-link" href="{{ url_for('about') }}" target="_blank" rel="noopener">Live the Bean!</a>
       <a class="catchphrase-link" href="{{ url_for('leaderboard_page') }}" target="_blank" rel="noopener">Leaderboard</a>
       <a class="catchphrase-link" href="{{ url_for('mobile') }}">Mobile version</a>
@@ -28,6 +30,7 @@
     </div>
 
     <div class="panel notices-panel">
+      <button id="mute-btn" class="mute-btn" title="Mute sounds" aria-pressed="false">🔊</button>
       <h2>Notices:</h2>
       <ul id="notices-list" class="notices-list"></ul>
     </div>

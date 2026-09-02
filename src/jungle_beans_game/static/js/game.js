@@ -1,5 +1,6 @@
 let state = null;
 let selectedAirport = null;
+let overlayDismissed = false;
 
 let leafletMap = null;
 let markersLayer = null;
@@ -7,6 +8,116 @@ let travelLine = null;
 let mapFitted = false;
 
 const $ = (id) => document.getElementById(id);
+
+// ---------------------------------------------------------------------- //
+// Sound effects
+// ---------------------------------------------------------------------- //
+
+let soundMuted = false;
+try {
+  soundMuted = localStorage.getItem("jb-muted") === "1";
+} catch (e) {
+  /* localStorage unavailable — default unmuted */
+}
+
+const SOUND_URL = (file) => `/static/sounds/${file}`;
+
+function playSound(file) {
+  if (soundMuted) return;
+  try {
+    new Audio(SOUND_URL(file)).play().catch(() => {});
+  } catch (e) {
+    /* ignore playback errors */
+  }
+}
+
+// Airport penalty flavor text (see AIRPORT_PENALTY_NOTICE in data.py) is
+// matched by a unique snippet per airport rather than the airport code,
+// since the code never appears in the notice string itself.
+const AIRPORT_PENALTY_SOUND = [
+  [/pygmy rattlesnake/i, "chill_pluck.mp3"], // ATL
+  [/crown prince/i, "chill_pluck.mp3"], // DXB
+  [/fermented fish/i, "sick.mp3"], // HND
+  [/sergeant gramps/i, "sick.mp3"], // DFW
+  [/edm beats/i, "chill_pluck.mp3"], // LHR
+  [/dim sum/i, "sick.mp3"], // PVG
+  [/snowstorm/i, "chill_pluck.mp3"], // DEN
+  [/diseased hot dog/i, "sick.mp3"], // ORD
+  [/hedgehog meat/i, "sick.mp3"], // IST
+  [/blueish-purple berries/i, "chill_pluck.mp3"], // GRU
+];
+
+const SELL_BIG_SALE_THRESHOLD = 500;
+
+function soundForNotice(text) {
+  if (/shots fired/i.test(text)) return "machine_gun.mp3";
+  if (/police seized|border agents/i.test(text)) return "sirens.mp3";
+  if (/mobster/i.test(text)) return "la_vita.mp3";
+
+  const sold = text.match(/Sold \d+x .+ for \$([\d,]+) at/i);
+  if (sold) {
+    const amount = parseInt(sold[1].replace(/,/g, ""), 10);
+    return amount > SELL_BIG_SALE_THRESHOLD ? "funk_jam.mp3" : "money_counting.mp3";
+  }
+
+  if (/^Day \d+ — Bought \d+x/i.test(text)) return "buy.mp3";
+  if (/^Day \d+ — Flew from .+ to .+ airfare\./i.test(text)) return "travel_sound.mp3";
+
+  for (const [pattern, sound] of AIRPORT_PENALTY_SOUND) {
+    if (pattern.test(text)) return sound;
+  }
+  return null;
+}
+
+// Notices are prepended (newest first), so the new ones added by an action
+// are the leading slice up to wherever the previous newest notice now sits.
+// Returns null instead of [] when the previous newest notice can't be found
+// at all — that means a reset/load jumped to an unrelated notice timeline,
+// not that zero notices were added, so callers can tell the two apart.
+function newNoticesSince(oldNotices, newNotices) {
+  if (!oldNotices || oldNotices.length === 0) return null;
+  const idx = newNotices.indexOf(oldNotices[0]);
+  if (idx === -1) return null;
+  return newNotices.slice(0, idx);
+}
+
+function playSoundsForStateChange(oldState, newState) {
+  if (!oldState) return; // baseline load — stay quiet
+  const added = newNoticesSince(oldState.notices, newState.notices);
+  if (added === null) return; // reset/load into an unrelated timeline — stay quiet
+  // Play oldest-to-newest so the audio order matches what happened.
+  for (let i = added.length - 1; i >= 0; i--) {
+    const sound = soundForNotice(added[i]);
+    if (sound) playSound(sound);
+  }
+  if (newState.day !== oldState.day) playSound("chill_pluck.mp3");
+}
+
+function applyState(newState) {
+  const oldState = state;
+  state = newState;
+  playSoundsForStateChange(oldState, newState);
+}
+
+function wireMuteButton() {
+  const btn = $("mute-btn");
+  if (!btn) return;
+  const sync = () => {
+    btn.textContent = soundMuted ? "🔇" : "🔊";
+    btn.classList.toggle("muted", soundMuted);
+    btn.setAttribute("aria-pressed", String(soundMuted));
+  };
+  btn.addEventListener("click", () => {
+    soundMuted = !soundMuted;
+    try {
+      localStorage.setItem("jb-muted", soundMuted ? "1" : "0");
+    } catch (e) {
+      /* ignore */
+    }
+    sync();
+  });
+  sync();
+}
 
 function initMap() {
   leafletMap = L.map("world-map", { minZoom: 1, maxZoom: 7 }).setView([15, 10], 2);
@@ -45,7 +156,7 @@ async function refresh() {
     window.location.href = "/";
     return;
   }
-  state = await res.json();
+  applyState(await res.json());
   render();
 }
 
@@ -128,7 +239,7 @@ function renderMarket() {
     tr.querySelector(".buy-btn").addEventListener("click", async () => {
       const qty = parseInt(tr.querySelector(".buy-qty").value, 10) || 0;
       const result = await api("/api/buy", { product: key, qty });
-      state = result.state;
+      applyState(result.state);
       if (!result.ok) alert(result.error);
       render();
     });
@@ -237,7 +348,7 @@ function animatePlane(originCode, destCode) {
 
 function renderOverlay() {
   const overlay = $("game-over-overlay");
-  if (state.game_over) {
+  if (state.game_over && !overlayDismissed) {
     overlay.classList.remove("hidden");
     $("overlay-title").textContent = state.win ? "✈️🔥 YOU WIN! 🔥✈️" : "Game Over";
     $("overlay-message").textContent = state.game_over_reason;
@@ -275,8 +386,9 @@ function render() {
 async function handleReset() {
   if (!confirm("Reset the game and lose current progress?")) return;
   const result = await api("/api/reset");
-  state = result.state;
+  applyState(result.state);
   selectedAirport = null;
+  overlayDismissed = false;
   render();
 }
 
@@ -292,7 +404,7 @@ function wireControls() {
     const qty = parseInt($("sale-qty").value, 10) || 0;
     if (!product) return alert("Pick a product first.");
     const result = await api("/api/sell", { product, qty });
-    state = result.state;
+    applyState(result.state);
     if (!result.ok) alert(result.error);
     render();
   });
@@ -305,18 +417,22 @@ function wireControls() {
       alert(result.error);
       return;
     }
-    state = result.state;
+    applyState(result.state);
     render();
     animatePlane(origin, state.location);
   });
 
   $("reset-btn").addEventListener("click", handleReset);
   $("overlay-reset-btn").addEventListener("click", handleReset);
+  $("overlay-dashboard-btn").addEventListener("click", () => {
+    overlayDismissed = true;
+    renderOverlay();
+  });
 
   $("save-btn").addEventListener("click", async () => {
     const name = $("save-name").value.trim() || "save";
     const result = await api("/api/save", { name });
-    state = result.state;
+    applyState(result.state);
     render();
   });
 
@@ -325,12 +441,14 @@ function wireControls() {
     if (!name) return alert("No saves yet.");
     const result = await api("/api/load", { name });
     if (!result.ok) return alert(result.error);
-    state = result.state;
+    applyState(result.state);
     selectedAirport = null;
+    overlayDismissed = false;
     render();
   });
 }
 
 initMap();
 wireControls();
+wireMuteButton();
 refresh();

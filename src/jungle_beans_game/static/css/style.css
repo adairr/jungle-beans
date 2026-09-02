@@ -64,6 +64,14 @@ button, select, input {
   flex-wrap: wrap;
 }
 .logo-panel h1 { color: var(--yellow); font-size: 2rem; margin: 0; }
+.version-tag {
+  font-size: 0.65rem;
+  font-style: italic;
+  font-weight: 700;
+  color: var(--cream);
+  opacity: 0.7;
+  align-self: flex-end;
+}
 .catchphrase-link {
   font-style: italic;
   font-weight: 800;
@@ -82,7 +90,25 @@ button, select, input {
   white-space: nowrap;
 }
 
-.notices-panel { grid-area: notices; display: flex; flex-direction: column; }
+.notices-panel { grid-area: notices; display: flex; flex-direction: column; position: relative; }
+
+.mute-btn {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  line-height: 1;
+  font-size: 0.9rem;
+  border: 2px solid var(--maroon);
+  border-radius: 50%;
+  background: var(--cream);
+  color: var(--ink);
+  cursor: pointer;
+}
+.mute-btn:active { transform: translateY(1px); }
+.mute-btn.muted { background: var(--maroon); color: var(--cream); }
 .airports-panel { grid-area: airports; display: flex; flex-direction: column; }
 .market-panel { grid-area: market; display: flex; flex-direction: column; overflow-y: auto; }
 .map-panel { grid-area: map; display: flex; padding: 4px; position: relative; isolation: isolate; }

@@ -15,27 +15,28 @@
     </header>
 
     <div class="panel about-panel">
-      <h2>Fastest Wins</h2>
-      <p>Ranked by fewest in-game days to reach $20,000 net worth with beans sold through every airport.</p>
+      <h2>Top Cash Scores</h2>
+      <p>The top 10 wallets at the end of a run — whether you won, went bankrupt, or retired.</p>
       {% if rows %}
       <table class="leaderboard-table">
         <thead>
-          <tr><th>#</th><th>Player</th><th>Days</th><th>Net Worth</th><th>When</th></tr>
+          <tr><th>#</th><th>Player</th><th>Cash</th><th>Airports</th><th>Days</th><th>When</th></tr>
         </thead>
         <tbody>
           {% for row in rows %}
           <tr>
             <td>{{ loop.index }}</td>
             <td>{{ row.name }}</td>
+            <td>${{ "{:,}".format(row.cash) }}</td>
+            <td>{{ row.airports_covered }}/{{ airports_total }}</td>
             <td>{{ row.days }}</td>
-            <td>${{ "{:,}".format(row.net_worth) }}</td>
-            <td>{{ row.won_at_display }}</td>
+            <td>{{ row.recorded_at_display }}</td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
       {% else %}
-      <p><em>No one's won yet. Be the first!</em></p>
+      <p><em>No runs finished yet. Be the first!</em></p>
       {% endif %}
     </div>
 

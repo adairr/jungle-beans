@@ -59,6 +59,12 @@ def _finalize(game: GameState) -> dict:
     if game.win and not game.win_recorded:
         db.record_win(uid, game.day, game.net_worth())
         game.win_recorded = True
+    # Every ended run — win, bankrupt, or retired — banks a cash score on
+    # the leaderboard, not just wins. Guarded the same way as win_recorded
+    # above so repeated /api/state polling doesn't insert duplicate rows.
+    if game.game_over and not game.score_recorded:
+        db.record_score(uid, game.cash, game.day, game.airports_covered())
+        game.score_recorded = True
     state = game.public_state()
     state["saves"] = db.list_saves(uid)
     state["name"] = session.get("name")
@@ -91,10 +97,10 @@ def leaderboard_page():
     rows = db.leaderboard()
     for row in rows:
         try:
-            row["won_at_display"] = datetime.fromisoformat(row["won_at"]).strftime("%Y-%m-%d %H:%M UTC")
+            row["recorded_at_display"] = datetime.fromisoformat(row["recorded_at"]).strftime("%Y-%m-%d %H:%M UTC")
         except ValueError:
-            row["won_at_display"] = row["won_at"]
-    return render_template("leaderboard.html", rows=rows)
+            row["recorded_at_display"] = row["recorded_at"]
+    return render_template("leaderboard.html", rows=rows, airports_total=len(data.AIRPORTS))
 
 
 @app.post("/api/register")
@@ -183,6 +189,14 @@ def api_reset():
     game = get_game()
     game.new_game()
     return jsonify({"ok": True, "state": _finalize(game)})
+
+
+@app.post("/api/retire")
+@login_required
+def api_retire():
+    game = get_game()
+    result = game.retire()
+    return jsonify({**result, "state": _finalize(game)})
 
 
 @app.post("/api/save")

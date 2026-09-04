@@ -37,8 +37,8 @@ button, select, input {
   grid-template-areas:
     "logo     notices  airports"
     "market   notices  airports"
+    "map      map      airports"
     "map      map      wallet"
-    "map      map      debt"
     "map      map      life"
     "bottombar bottombar bottombar";
   gap: 6px;
@@ -82,6 +82,14 @@ button, select, input {
   white-space: nowrap;
 }
 .catchphrase-link:hover { color: var(--yellow); border-color: var(--yellow); }
+.catchphrase-link.info-link {
+  color: var(--ink);
+  background: var(--yellow);
+  border-bottom-width: 0;
+  padding: 1px 7px 2px;
+  border-radius: 3px;
+}
+.catchphrase-link.info-link:hover { color: var(--maroon); background: var(--cream); }
 .logo-spacer { flex: 1; min-width: 0; }
 .account-line {
   font-size: 0.78rem;
@@ -121,7 +129,6 @@ button, select, input {
   font-weight: bold;
   margin-right: 3px;
 }
-.debt-panel { grid-area: debt; display: flex; align-items: center; }
 .life-panel { grid-area: life; display: flex; align-items: center; gap: 12px; }
 
 .notices-list, .airports-list {

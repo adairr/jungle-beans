@@ -17,6 +17,8 @@ from typing import Iterator
 
 from werkzeug.security import check_password_hash, generate_password_hash
 
+from . import data
+
 DB_PATH = Path(__file__).resolve().parents[2] / "jungle_beans.db"
 
 # `name` is the login identity and what shows on the leaderboard; `email` is
@@ -47,6 +49,14 @@ CREATE TABLE IF NOT EXISTS wins (
     days INTEGER NOT NULL,
     net_worth INTEGER NOT NULL,
     won_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS scores (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    cash INTEGER NOT NULL,
+    days INTEGER NOT NULL,
+    airports_covered INTEGER NOT NULL DEFAULT 0,
+    recorded_at TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS access_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -168,6 +178,24 @@ def _migrate(conn: sqlite3.Connection) -> None:
                ) WHERE name IS NULL"""
         )
 
+    # airports_covered is a plain NOT NULL DEFAULT 0 column, so — like
+    # last_active_at above — a simple ADD COLUMN covers a `scores` table
+    # that already existed before this column was added.
+    if "airports_covered" not in _table_info(conn, "scores"):
+        conn.execute("ALTER TABLE scores ADD COLUMN airports_covered INTEGER NOT NULL DEFAULT 0")
+
+    # One-time backfill: the leaderboard used to read `wins` only; it now
+    # reads the broader `scores` table instead. Copy existing wins across
+    # (net_worth -> cash, and a win always means every airport was covered)
+    # so deployments with real win history don't see the leaderboard go
+    # blank just because the ranking mechanism changed underneath it.
+    if conn.execute("SELECT 1 FROM scores LIMIT 1").fetchone() is None:
+        conn.execute(
+            """INSERT INTO scores (user_id, cash, days, airports_covered, recorded_at)
+               SELECT user_id, net_worth, days, ?, won_at FROM wins""",
+            (len(data.AIRPORTS),),
+        )
+
 
 def init_db() -> None:
     with _connect() as conn:
@@ -263,6 +291,17 @@ def record_win(user_id: int, days: int, net_worth: int) -> None:
         )
 
 
+def record_score(user_id: int, cash: int, days: int, airports_covered: int) -> None:
+    """Logs the wallet a run ended with — win, bankrupt, or retired — as a
+    leaderboard entry. Called once per ended run (see GameState.score_recorded)."""
+    with _connect() as conn:
+        conn.execute(
+            """INSERT INTO scores (user_id, cash, days, airports_covered, recorded_at)
+               VALUES (?, ?, ?, ?, ?)""",
+            (user_id, cash, days, airports_covered, datetime.now(timezone.utc).isoformat()),
+        )
+
+
 def log_access(user_id: int, name: str, email: str | None, event: str, ip_address: str | None) -> None:
     """event: "register" or "login" — who tried the game, and when."""
     with _connect() as conn:
@@ -302,14 +341,16 @@ def access_log(limit: int = 200) -> list[dict]:
     return [dict(r) for r in rows]
 
 
-def leaderboard(limit: int = 25) -> list[dict]:
-    """Wins ranked by fastest days-to-win, then earliest if tied."""
+def leaderboard(limit: int = 10) -> list[dict]:
+    """Top cash scores across all ended runs (win, bankrupt, or retired),
+    highest first, earliest-recorded breaking ties."""
     with _connect() as conn:
         rows = conn.execute(
-            """SELECT users.name AS name, wins.days AS days,
-                      wins.net_worth AS net_worth, wins.won_at AS won_at
-               FROM wins JOIN users ON users.id = wins.user_id
-               ORDER BY wins.days ASC, wins.won_at ASC
+            """SELECT users.name AS name, scores.cash AS cash, scores.days AS days,
+                      scores.airports_covered AS airports_covered,
+                      scores.recorded_at AS recorded_at
+               FROM scores JOIN users ON users.id = scores.user_id
+               ORDER BY scores.cash DESC, scores.recorded_at ASC
                LIMIT ?""",
             (limit,),
         ).fetchall()

@@ -244,8 +244,8 @@ AIRPORT_PENALTY_NOTICE: dict[str, str] = {
     "Buc-ee's for gas and got bitten by a pygmy rattlesnake.",
     "DXB": "You locked eyes with the daughter of the Crown Prince a minute too "
     "long and were lightly caned for the faux pas.",
-    "HND": "Your local contact gifted you fermented fish — you've had "
-    "diarrhea for 3 days.",
+    "HND": "Your local contact gifted you fermented fish — this case of  "
+    "diarrhea might last for days.",
     "DFW": "You ate a bad BBQ meal at Sergeant Gramps' Roadhouse.",
     "LHR": "Someone at your hotel blasted loud EDM beats until 5am and you "
     "nearly lost your mind.",

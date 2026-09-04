@@ -22,10 +22,18 @@ try {
 
 const SOUND_URL = (file) => `/static/sounds/${file}`;
 
+// Per-file volume overrides (1.0 = full volume) — travel_sound.mp3 plays
+// louder than the rest of the mix at full volume, so it's turned down.
+const SOUND_VOLUME = {
+  "travel_sound.mp3": 0.5,
+};
+
 function playSound(file) {
   if (soundMuted) return;
   try {
-    new Audio(SOUND_URL(file)).play().catch(() => {});
+    const audio = new Audio(SOUND_URL(file));
+    audio.volume = SOUND_VOLUME[file] ?? 1.0;
+    audio.play().catch(() => {});
   } catch (e) {
     /* ignore playback errors */
   }
@@ -47,7 +55,7 @@ const AIRPORT_PENALTY_SOUND = [
   [/blueish-purple berries/i, "chill_pluck.mp3"], // GRU
 ];
 
-const SELL_BIG_SALE_THRESHOLD = 2000;
+const SELL_BIG_SALE_THRESHOLD = 5000;
 
 // Arrival field bonuses (see FIELD_BONUSES + Pineapple Express in data.py).
 // Field bonus 1 (mobster protection) is handled by the /mobster/i rule
@@ -213,6 +221,10 @@ function heatClass(heat, heatMax) {
   return "heat-calm";
 }
 
+function heatFlames(heat) {
+  return "🔥".repeat(heat);
+}
+
 function renderAirports() {
   $("airports-list").innerHTML = state.airports
     .map((a) => {
@@ -220,7 +232,7 @@ function renderAirports() {
       if (a.code === state.location) classes.push("current");
       if (a.code === selectedAirport) classes.push("selected");
       const fare = a.is_current ? "" : `$${a.airfare.toLocaleString()}`;
-      const heat = `<span class="heat-badge ${heatClass(a.heat, a.heat_max)}">🔥${a.heat}/${a.heat_max}</span>`;
+      const heat = `<span class="heat-badge ${heatClass(a.heat, a.heat_max)}">${heatFlames(a.heat)}</span>`;
       const covered = a.win_covered ? `<span class="covered-badge" title="Sold here — counts toward the win">✓</span>` : "";
       return `<li class="${classes.join(" ")}" data-code="${a.code}">
         <span>${covered}${a.name} ${heat}</span><span>${fare}</span>
@@ -289,7 +301,7 @@ function airportTooltipHtml(airport) {
     })
     .join("");
   const heat = `<div class="tooltip-row heat-line ${heatClass(airport.heat, airport.heat_max)}">
-    <span>Heat</span><span>🔥${airport.heat}/${airport.heat_max}</span></div>`;
+    <span>Heat</span><span>${heatFlames(airport.heat)}</span></div>`;
   return `<div class="airport-tooltip"><span class="tooltip-title">${airport.name}</span>${heat}${rows}</div>`;
 }
 
@@ -321,19 +333,32 @@ function renderMap() {
   state.airports.forEach((a) => {
     const isCurrent = a.code === state.location;
     const isSelected = a.code === selectedAirport;
+    // Bigger touch targets than a mouse cursor needs — the mobile map is
+    // squeezed into a short strip with 10 airports on it, some tightly
+    // clustered (e.g. LHR/IST/DXB), so a tiny hit radius makes the wrong
+    // airport easy to tap by accident.
     const marker = L.circleMarker([a.lat, a.lon], {
-      radius: isCurrent ? 9 : 6,
+      radius: isCurrent ? 11 : 8,
       color: "#4a2f2f",
       weight: 1.5,
       fillColor: isCurrent ? "#fbf35b" : isSelected ? "#ff8a4c" : "#4a90d9",
       fillOpacity: 1,
     });
-    marker.bindTooltip(airportTooltipHtml(a), { direction: "top", offset: [0, -6] });
+    // "auto" instead of a forced "top" lets Leaflet flip the tooltip to
+    // whichever side actually fits — pinning it above always clips off the
+    // top edge for airports near the top of the short mobile map strip.
+    marker.bindTooltip(airportTooltipHtml(a), { direction: "auto", offset: [0, -6] });
     marker.on("click", () => {
       selectedAirport = a.code;
       render();
     });
     marker.addTo(markersLayer);
+    // Touch devices open a tooltip on tap (Leaflet's hover substitute), but
+    // the render() call above/from this same click just tore down and
+    // rebuilt the whole marker layer synchronously — destroying that
+    // tooltip before the browser ever paints it. Re-opening it here, after
+    // the rebuild, is what actually makes it visible on mobile.
+    if (isSelected) marker.openTooltip();
   });
 }
 
@@ -366,9 +391,13 @@ function renderOverlay() {
   const overlay = $("game-over-overlay");
   if (state.game_over && !overlayDismissed) {
     overlay.classList.remove("hidden");
-    $("overlay-title").textContent = state.win ? "✈️🔥 YOU WIN! 🔥✈️" : "Game Over";
+    $("overlay-title").textContent = state.win
+      ? "✈️🔥 YOU WIN! 🔥✈️"
+      : state.retired
+      ? "🌴 Retired 🌴"
+      : "Game Over";
     $("overlay-message").textContent = state.game_over_reason;
-    $("overlay-leaderboard-link").classList.toggle("hidden", !state.win);
+    $("overlay-leaderboard-link").classList.remove("hidden");
   } else {
     overlay.classList.add("hidden");
   }
@@ -380,7 +409,8 @@ function render() {
   $("net-worth-goal").textContent = `$${state.net_worth_goal.toLocaleString()}`;
   $("airports-covered-value").textContent = state.airports_covered;
   $("airports-total-value").textContent = state.airports_total;
-  $("debt-value").textContent = `$${state.debt.toLocaleString()}`;
+  const debtEl = $("debt-value");
+  if (debtEl) debtEl.textContent = `$${state.debt.toLocaleString()}`;
   $("life-hearts").innerHTML = renderHearts(state.life, state.life_max);
   $("day-value").textContent = state.day;
   $("level-value").textContent = `Lvl ${state.level} · ${state.sales_since_day}/${state.sales_per_day} sales today`;
@@ -404,6 +434,15 @@ async function handleReset() {
   const result = await api("/api/reset");
   applyState(result.state);
   selectedAirport = null;
+  overlayDismissed = false;
+  render();
+}
+
+async function handleRetire() {
+  if (!confirm("Retire from the Jungle Bean business and end this run?")) return;
+  const result = await api("/api/retire");
+  applyState(result.state);
+  if (!result.ok) return alert(result.error);
   overlayDismissed = false;
   render();
 }
@@ -438,7 +477,7 @@ function wireControls() {
     animatePlane(origin, state.location);
   });
 
-  $("reset-btn").addEventListener("click", handleReset);
+  $("reset-btn").addEventListener("click", handleRetire);
   $("overlay-reset-btn").addEventListener("click", handleReset);
   $("overlay-dashboard-btn").addEventListener("click", () => {
     overlayDismissed = true;

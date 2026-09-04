@@ -23,6 +23,7 @@
       <h1>Jungle Beans</h1>
       <span class="version-tag">v2.0</span>
       <a class="catchphrase-link" href="{{ url_for('about') }}" target="_blank" rel="noopener">Live the Bean!</a>
+      <a class="catchphrase-link info-link" href="{{ url_for('about') }}" target="_blank" rel="noopener">ℹ️ Info</a>
       <a class="catchphrase-link" href="{{ url_for('leaderboard_page') }}" target="_blank" rel="noopener">Leaderboard</a>
       <a class="catchphrase-link" href="{{ url_for('mobile') }}">Mobile version</a>
       <span class="logo-spacer"></span>
@@ -61,9 +62,6 @@
         &middot; Airports <span id="airports-covered-value">0</span>/<span id="airports-total-value">0</span> sold</p>
       <p id="status-effects" class="win-progress"></p>
     </div>
-    <div class="panel debt-panel">
-      <h2>debt: <span id="debt-value">$0</span></h2>
-    </div>
     <div class="panel life-panel">
       <h2>life:</h2>
       <div id="life-hearts" class="life-hearts"></div>
@@ -87,7 +85,7 @@
         <button id="travel-btn">Travel</button>
       </div>
       <div class="bottom-cell">
-        <button id="reset-btn">Reset Game</button>
+        <button id="reset-btn">Retire</button>
       </div>
       <div class="bottom-cell save-cell">
         <button id="save-btn">Save</button>

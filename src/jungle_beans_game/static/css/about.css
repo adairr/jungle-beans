@@ -43,6 +43,14 @@
   margin: 0 0 10px 0;
 }
 .about-panel p:last-child { margin-bottom: 0; }
+.about-panel ol {
+  font-style: normal;
+  font-weight: normal;
+  margin: 0;
+  padding-left: 22px;
+}
+.about-panel ol li { margin-bottom: 10px; }
+.about-panel ol li:last-child { margin-bottom: 0; }
 
 .about-back {
   display: inline-block;

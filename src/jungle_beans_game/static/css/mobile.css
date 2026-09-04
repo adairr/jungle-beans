@@ -34,6 +34,12 @@
   text-decoration: none;
   border-bottom: 2px solid var(--maroon);
 }
+.m-header-links a.info-link {
+  background: var(--yellow);
+  border-bottom-width: 0;
+  padding: 1px 7px 2px;
+  border-radius: 3px;
+}
 .m-account {
   font-size: 0.8rem;
   font-style: italic;
@@ -108,6 +114,15 @@
   height: 280px;
   border-radius: 2px;
   border: 1px solid var(--maroon);
+}
+
+/* The airport hover/tap tooltip is sized for a desktop mouse cursor by
+   default (style.css) — bump it up for the short, narrow mobile map strip
+   where it's read at arm's length, not squinted at up close. */
+.m-map-panel .airport-tooltip {
+  font-size: 0.95rem;
+  min-width: 170px;
+  line-height: 1.55;
 }
 
 .m-panel .airports-list,

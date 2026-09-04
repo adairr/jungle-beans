@@ -49,7 +49,9 @@ class GameState:
         self.notices: list[str] = []
         self.game_over = False
         self.win = False
+        self.retired = False
         self.win_recorded = False  # leaderboard bookkeeping, not persisted to save files
+        self.score_recorded = False  # cash-leaderboard bookkeeping, not persisted to save files
         self.game_over_reason = ""
 
         # Assign 4 negative / 3 positive / 3 baseline modifiers across the 10 airports.
@@ -206,7 +208,7 @@ class GameState:
 
         pre_roll = random.randint(1, data.DICE_SIDES)
         if pre_roll <= hot_faces:
-            self._resolve_event(product_key, "pre", pre_roll, hot_faces)
+            self._resolve_event(product_key, "pre")
         else:
             price = self.current_price(self.location, product_key)
             revenue = int(round(price * qty * (1 - data.SELL_SPREAD_PCT)))
@@ -220,7 +222,7 @@ class GameState:
 
             post_roll = random.randint(1, data.DICE_SIDES)
             if post_roll <= hot_faces:
-                self._resolve_event(product_key, "post", post_roll, hot_faces)
+                self._resolve_event(product_key, "post")
 
         self.sales_since_day += 1
         if self.sales_since_day >= data.SALES_PER_DAY:
@@ -230,7 +232,7 @@ class GameState:
         self._check_end_conditions()
         return {"ok": True}
 
-    def _resolve_event(self, product_key: str, timing: str, roll: int, hot_faces: int) -> None:
+    def _resolve_event(self, product_key: str, timing: str) -> None:
         product = data.PRODUCT_BY_KEY[product_key]
         die1, die2 = random.randint(1, 6), random.randint(1, 6)
         event = data.DICE_SUM_TO_EVENT[die1 + die2]
@@ -279,10 +281,7 @@ class GameState:
             if timing == "pre"
             else "Caught on the way out! "
         )
-        detail = [
-            f"{lede}[triggered {roll}/{hot_faces} on the d{data.DICE_SIDES}, "
-            f"rolled {die1}+{die2}={die1 + die2} → {event['name']}] {outcome['notice']}"
-        ]
+        detail = [f"{lede}{outcome['notice']}"]
         if cash_loss:
             detail.append(f"Lost ${cash_loss:,}.")
         if lost_qty:
@@ -331,7 +330,7 @@ class GameState:
             bonus = data.FIELD_BONUS_BY_SUM.get(die1 + die2)
             if bonus is None:
                 return
-            detail = [f"[rolled {die1}+{die2}={die1 + die2} → {bonus['name']}] {bonus['notice']}"]
+            detail = [bonus["notice"]]
             if "cash_gain" in bonus:
                 self.cash += bonus["cash_gain"]
                 detail.append(f"Gained ${bonus['cash_gain']:,}.")
@@ -344,7 +343,6 @@ class GameState:
                 self.price_discount_airport = self.location
                 pct = int(data.PINEAPPLE_EXPRESS["price_discount_pct"] * 100)
                 self._log(
-                    f"[rolled {roll}/{data.PINEAPPLE_EXPRESS_FACES} on the d{data.DICE_SIDES}] "
                     f"{data.PINEAPPLE_EXPRESS['notice']} Prices here are down {pct}% while you stay."
                 )
 
@@ -358,7 +356,7 @@ class GameState:
             return
         gain = data.BEVERAGE_GENEROSITY_LIFE_GAIN
         self.life = min(data.STARTING_LIFE, self.life + gain)
-        self._log(f"[rolled {roll}/{data.BEVERAGE_GENEROSITY_DIE_SIDES}] {data.BEVERAGE_GENEROSITY_NOTICE} ({gain} half-heart restored)")
+        self._log(f"{data.BEVERAGE_GENEROSITY_NOTICE} ({gain} half-heart restored)")
 
     def _check_airport_penalty(self) -> None:
         if self.location == self.protected_airport:
@@ -373,7 +371,7 @@ class GameState:
         life_loss = max(1, int(round(base_loss * intensity)))
         self.life = max(0, self.life - life_loss)
         notice = data.AIRPORT_PENALTY_NOTICE[self.location]
-        self._log(f"[rolled {roll}/{die_sides}] {notice} ({life_loss} half-heart damage)")
+        self._log(f"{notice} ({life_loss} half-heart damage)")
 
     def _advance_day(self) -> None:
         old_level = self.level
@@ -443,6 +441,39 @@ class GameState:
         return data.AIRPORT_BY_CODE[self.location].name
 
     # ------------------------------------------------------------------ #
+    # Retire (voluntary end of run — replaces the old plain "Reset")
+    # ------------------------------------------------------------------ #
+    def retire(self) -> dict:
+        if self.game_over:
+            return {"ok": False, "error": "The game has already ended."}
+        self.game_over = True
+        self.retired = True
+        self.game_over_reason = self._retire_message()
+        self._log("RETIRED — " + self.game_over_reason)
+        return {"ok": True}
+
+    def _retire_message(self) -> str:
+        """Ending flavor text keyed off wallet size (and, for the top tier,
+        full airport coverage) — see the "Reture" button section of
+        JB_template.md."""
+        cash = self.cash
+        total_airports = len(data.AIRPORTS)
+        if cash < 500:
+            return "Your flat busted."
+        if cash < 5000:
+            return "You decide to pivot away from the Jungle Bean lifestyle."
+        if cash < 10000:
+            return "You realize that Jungle Bean life is not for you!"
+        if cash < 20000 or self.airports_covered() < total_airports:
+            return "You retire from Jungle Bean smuggling to a quiet simple job in the countryside."
+        city = self._most_active_airport_name()
+        return f"Retire comfortably in {city} as a legend."
+
+    def _most_active_airport_name(self) -> str:
+        code = max(self.sales_by_airport, key=lambda c: self.sales_by_airport[c])
+        return data.AIRPORT_BY_CODE[code].name
+
+    # ------------------------------------------------------------------ #
     # Serialization
     # ------------------------------------------------------------------ #
     def to_dict(self) -> dict:
@@ -461,6 +492,7 @@ class GameState:
             "notices": self.notices,
             "game_over": self.game_over,
             "win": self.win,
+            "retired": self.retired,
             "game_over_reason": self.game_over_reason,
             "airport_modifier": self.airport_modifier,
             "drift": self.drift,
@@ -490,6 +522,7 @@ class GameState:
         state.notices = payload["notices"]
         state.game_over = payload["game_over"]
         state.win = payload["win"]
+        state.retired = payload.get("retired", False)
         state.game_over_reason = payload["game_over_reason"]
         state.airport_modifier = payload["airport_modifier"]
         state.drift = payload["drift"]
@@ -501,9 +534,10 @@ class GameState:
             "volume_since_eval", {a.code: {p.key: 0 for p in data.PRODUCTS} for a in data.AIRPORTS}
         )
         state.regional_fare = payload.get("regional_fare") or cls._roll_regional_fares()
-        # Treat an already-won loaded save as already recorded, so saving and
-        # reloading a win can't be used to farm repeat leaderboard entries.
+        # Treat an already-won/ended loaded save as already recorded, so
+        # saving and reloading can't be used to farm repeat leaderboard entries.
         state.win_recorded = state.win
+        state.score_recorded = state.game_over
         return state
 
     def note_saved(self, name: str) -> None:
@@ -565,5 +599,6 @@ class GameState:
             "notices": self.notices,
             "game_over": self.game_over,
             "win": self.win,
+            "retired": self.retired,
             "game_over_reason": self.game_over_reason,
         }

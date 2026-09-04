@@ -340,6 +340,11 @@ WIN_NET_WORTH = 20000
 # network" fantasy. Units sold, not sale attempts, at any product mix.
 WIN_MIN_SALES_PER_AIRPORT = 1
 
+# Hitting the win condition doesn't end the run — players can keep playing
+# indefinitely. This just marks when the UI nudges them toward Retire, so a
+# session doesn't run forever without a natural "you could stop here" beat.
+RETIREMENT_SUGGESTION_DAY = 50
+
 # Player level (and product unlocks) advance with elapsed in-game days, not
 # sales count — a new tier every LEVEL_UP_INTERVAL_DAYS days, capped at
 # level 4. E.g. at 3: day 0-2 = level 1, day 3-5 = level 2 (Bean Gummies), etc.

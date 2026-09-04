@@ -423,18 +423,20 @@ class GameState:
             self.game_over_reason = "Your life meter hit zero. You've been taken off the board."
             self._log("GAME OVER — " + self.game_over_reason)
         elif (
-            self.net_worth() >= data.WIN_NET_WORTH
+            not self.win
+            and self.net_worth() >= data.WIN_NET_WORTH
             and self.airports_covered() >= len(data.AIRPORTS)
-            and not self.game_over
         ):
-            self.game_over = True
+            # Reaching the goal is an achievement, not an ending — the run
+            # keeps going until the player retires (or busts). Net worth
+            # counts unsold inventory, so it's called out separately from
+            # the wallet figure to avoid the two looking like a mismatch.
             self.win = True
-            self.game_over_reason = (
-                f"You built a ${self.net_worth():,} empire with beans moving through all "
-                f"{len(data.AIRPORTS)} airports and retired a legend."
-            )
             self._log(
-                "✈️🔥✈️ YOU WIN! 🔥✈️🔥 " + self.game_over_reason + " 🔥✈️🔥✈️🔥"
+                f"🏆 Legend status! Net worth passed ${data.WIN_NET_WORTH:,} "
+                f"(wallet: ${self.cash:,}) with beans moving through all "
+                f"{len(data.AIRPORTS)} airports. Keep building, or hit Retire "
+                "whenever you're ready to cash out."
             )
 
     def _airport_name(self) -> str:
@@ -589,6 +591,7 @@ class GameState:
             "location": self.location,
             "net_worth": self.net_worth(),
             "net_worth_goal": data.WIN_NET_WORTH,
+            "retirement_suggestion_day": data.RETIREMENT_SUGGESTION_DAY,
             "airports_covered": self.airports_covered(),
             "airports_total": len(data.AIRPORTS),
             "protected_airport": self.protected_airport,

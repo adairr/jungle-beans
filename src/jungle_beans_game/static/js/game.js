@@ -1,6 +1,7 @@
 let state = null;
 let selectedAirport = null;
 let overlayDismissed = false;
+let retirementPromptDismissed = false;
 
 let leafletMap = null;
 let markersLayer = null;
@@ -391,16 +392,24 @@ function renderOverlay() {
   const overlay = $("game-over-overlay");
   if (state.game_over && !overlayDismissed) {
     overlay.classList.remove("hidden");
-    $("overlay-title").textContent = state.win
-      ? "✈️🔥 YOU WIN! 🔥✈️"
-      : state.retired
-      ? "🌴 Retired 🌴"
+    $("overlay-title").textContent = state.retired
+      ? state.win
+        ? "🌴🏆 Retired a Legend! 🏆🌴"
+        : "🌴 Retired 🌴"
       : "Game Over";
     $("overlay-message").textContent = state.game_over_reason;
     $("overlay-leaderboard-link").classList.remove("hidden");
   } else {
     overlay.classList.add("hidden");
   }
+}
+
+function renderRetirementPrompt() {
+  const overlay = $("retirement-prompt-overlay");
+  if (!overlay) return;
+  const shouldShow =
+    !state.game_over && state.day >= state.retirement_suggestion_day && !retirementPromptDismissed;
+  overlay.classList.toggle("hidden", !shouldShow);
 }
 
 function render() {
@@ -427,6 +436,7 @@ function render() {
   renderLoadSelect();
   renderMap();
   renderOverlay();
+  renderRetirementPrompt();
 }
 
 async function handleReset() {
@@ -435,6 +445,7 @@ async function handleReset() {
   applyState(result.state);
   selectedAirport = null;
   overlayDismissed = false;
+  retirementPromptDismissed = false;
   render();
 }
 
@@ -499,8 +510,21 @@ function wireControls() {
     applyState(result.state);
     selectedAirport = null;
     overlayDismissed = false;
+    retirementPromptDismissed = false;
     render();
   });
+
+  const retirementOverlay = $("retirement-prompt-overlay");
+  if (retirementOverlay) {
+    $("retirement-keep-playing-btn").addEventListener("click", () => {
+      retirementPromptDismissed = true;
+      renderRetirementPrompt();
+    });
+    $("retirement-retire-btn").addEventListener("click", () => {
+      retirementPromptDismissed = true;
+      handleRetire();
+    });
+  }
 }
 
 initMap();

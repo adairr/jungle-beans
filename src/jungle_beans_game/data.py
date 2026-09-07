@@ -268,6 +268,61 @@ BEVERAGE_GENEROSITY_FACES = 1  # out of the die above (1/4 chance per qualifying
 BEVERAGE_GENEROSITY_LIFE_GAIN = 1  # half-heart units
 BEVERAGE_GENEROSITY_NOTICE = "Sale went so well that the contact shared a bean beverage with you."
 
+# "Bean Tier" progression — permanent milestone rewards for selling enough
+# of one product spread across enough distinct airports. One tier per
+# product tier (raw_bean/gummies/IV/oil — bean_beverage sits this one out,
+# it already has its own reward via BEVERAGE_GENEROSITY above). Achievement
+# is derived live from sales totals (never re-locks, since sales only ever
+# accumulate), not a stored flag.
+BEAN_TIERS: list[dict] = [
+    {
+        "key": "tier1",
+        "product": "raw_bean",
+        "qty": 60,
+        "airports": 4,
+        "label": "Sell 60 raw beans at 4 airports",
+        "reward": "Penalties capped at $4,000 cash or $4,000 worth of beans per event.",
+    },
+    {
+        "key": "tier2",
+        "product": "bean_gummies",
+        "qty": 20,
+        "airports": 3,
+        "label": "Sell 20 gummies at 3 airports",
+        "reward": "+5% cash on every sale.",
+    },
+    {
+        "key": "tier3",
+        "product": "bean_iv",
+        "qty": 10,
+        "airports": 3,
+        "label": "Sell 10 Bean IV at 3 airports",
+        "reward": "Gain half a heart every 5 days.",
+    },
+    {
+        "key": "tier4",
+        "product": "bean_oil",
+        "qty": 5,
+        "airports": 3,
+        "label": "Sell 5 Bean Oil at 3 airports",
+        "reward": "+9% cash on every sale.",
+    },
+]
+BEAN_TIER_BY_KEY: dict[str, dict] = {t["key"]: t for t in BEAN_TIERS}
+
+BEAN_TIER_1_PENALTY_CAP = 4000
+BEAN_TIER_2_SALE_BONUS_PCT = 0.05
+BEAN_TIER_3_HEAL_INTERVAL_DAYS = 5
+BEAN_TIER_3_HEAL_AMOUNT = 1  # half-heart units = half a heart
+BEAN_TIER_4_SALE_BONUS_PCT = 0.09
+
+# Emergency room: pay to patch up on demand instead of waiting on a lucky
+# beverage-generosity roll. Flat cost, gated by a cooldown so it can't be
+# spammed into a trivial full-life top-up after every sale.
+ER_VISIT_COST = 1000
+ER_COOLDOWN_DAYS = 3
+ER_LIFE_GAIN = 2  # half-heart units = 1 full heart
+
 PINEAPPLE_EXPRESS: dict = {
     "key": "pineapple_express",
     "name": "Pineapple Express",

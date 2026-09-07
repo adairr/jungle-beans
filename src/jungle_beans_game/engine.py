@@ -43,9 +43,13 @@ class GameState:
         self.inventory: dict[str, int] = {p.key: 0 for p in data.PRODUCTS}
         self.sales_count = 0
         self.sales_by_airport: dict[str, int] = {a.code: 0 for a in data.AIRPORTS}
+        self.sales_by_product_airport: dict[str, dict[str, int]] = {
+            p.key: {} for p in data.PRODUCTS
+        }
         self.sales_since_day = 0
         self.protected_airport: str | None = None
         self.price_discount_airport: str | None = None
+        self.last_er_day: int | None = None
         self.notices: list[str] = []
         self.game_over = False
         self.win = False
@@ -158,6 +162,18 @@ class GameState:
         faces = data.HEAT_BASE_FACES + round(premium * data.HEAT_SENSITIVITY)
         return max(1, min(data.DICE_SIDES, faces))
 
+    def bean_tier_achieved(self, tier_key: str) -> bool:
+        tier = data.BEAN_TIER_BY_KEY[tier_key]
+        sold = self.sales_by_product_airport.get(tier["product"], {})
+        total = sum(sold.values())
+        airports = sum(1 for qty in sold.values() if qty > 0)
+        return total >= tier["qty"] and airports >= tier["airports"]
+
+    def _check_bean_tier_milestones(self, previously_achieved: set[str]) -> None:
+        for tier in data.BEAN_TIERS:
+            if tier["key"] not in previously_achieved and self.bean_tier_achieved(tier["key"]):
+                self._log(f"🫘 Bean Tier unlocked: {tier['label']} — {tier['reward']}")
+
     def net_worth(self) -> int:
         inv_value = sum(
             self.inventory[k] * self.current_price(self.location, k) for k in self.inventory
@@ -210,14 +226,27 @@ class GameState:
         if pre_roll <= hot_faces:
             self._resolve_event(product_key, "pre")
         else:
+            # Snapshot which tiers are already unlocked before this sale
+            # counts, so the bonus below only applies to sales made *after*
+            # a tier is achieved, and the milestone notice only fires once.
+            tiers_before = {t["key"] for t in data.BEAN_TIERS if self.bean_tier_achieved(t["key"])}
+            bonus_pct = 0.0
+            if "tier2" in tiers_before:
+                bonus_pct += data.BEAN_TIER_2_SALE_BONUS_PCT
+            if "tier4" in tiers_before:
+                bonus_pct += data.BEAN_TIER_4_SALE_BONUS_PCT
+
             price = self.current_price(self.location, product_key)
-            revenue = int(round(price * qty * (1 - data.SELL_SPREAD_PCT)))
+            revenue = int(round(price * qty * (1 - data.SELL_SPREAD_PCT) * (1 + bonus_pct)))
             self.inventory[product_key] -= qty
             self.cash += revenue
             self.sales_count += 1
             self.sales_by_airport[self.location] = self.sales_by_airport.get(self.location, 0) + qty
+            product_sales = self.sales_by_product_airport.setdefault(product_key, {})
+            product_sales[self.location] = product_sales.get(self.location, 0) + qty
             self.volume_since_eval[self.location][product_key] -= qty
             self._log(f"Sold {qty}x {product.name} for ${revenue:,} at {self._airport_name()}.")
+            self._check_bean_tier_milestones(tiers_before)
             self._check_beverage_generosity(product_key, qty)
 
             post_roll = random.randint(1, data.DICE_SIDES)
@@ -249,21 +278,29 @@ class GameState:
             else data.LEVEL_INTENSITY_MULTIPLIER.get(self.level, 1.0)
         )
 
+        # Computed as raw totals first, capped once (if Bean Tier 1 is
+        # unlocked), then applied — rather than deducting incrementally per
+        # field — so the $4,000 cap covers the outcome's *combined* hit
+        # rather than being checked field-by-field.
         cash_loss = 0
         if "cash_loss_pct_range" in outcome:
             pct = min(1.0, random.uniform(*outcome["cash_loss_pct_range"]) * intensity)
-            cash_loss = int(self.cash * pct)
-            self.cash = max(0, self.cash - cash_loss)
+            cash_loss += int(self.cash * pct)
         if "cash_flat_range" in outcome:
-            flat = int(round(random.randint(*outcome["cash_flat_range"]) * intensity))
-            flat = min(flat, self.cash)  # a flat fine can't take cash you don't have
-            cash_loss += flat
-            self.cash = max(0, self.cash - flat)
+            cash_loss += int(round(random.randint(*outcome["cash_flat_range"]) * intensity))
+        if self.bean_tier_achieved("tier1"):
+            cash_loss = min(cash_loss, data.BEAN_TIER_1_PENALTY_CAP)
+        cash_loss = min(cash_loss, self.cash)  # a penalty can't take cash you don't have
+        self.cash -= cash_loss
 
         lost_qty = 0
         if "inventory_loss_pct_range" in outcome:
             pct = min(1.0, random.uniform(*outcome["inventory_loss_pct_range"]) * intensity)
             lost_qty = int(self.inventory[product_key] * pct)
+            if self.bean_tier_achieved("tier1"):
+                price = self.current_price(self.location, product_key)
+                if price > 0:
+                    lost_qty = min(lost_qty, data.BEAN_TIER_1_PENALTY_CAP // price)
             self.inventory[product_key] = max(0, self.inventory[product_key] - lost_qty)
 
         debt_gain = 0
@@ -346,6 +383,25 @@ class GameState:
                     f"{data.PINEAPPLE_EXPRESS['notice']} Prices here are down {pct}% while you stay."
                 )
 
+    def visit_er(self) -> dict:
+        if self.game_over:
+            return {"ok": False, "error": "The game has ended. Reset to play again."}
+        if self.life >= data.STARTING_LIFE:
+            return {"ok": False, "error": "You're already at full health."}
+        if self.last_er_day is not None and self.day - self.last_er_day < data.ER_COOLDOWN_DAYS:
+            days_left = data.ER_COOLDOWN_DAYS - (self.day - self.last_er_day)
+            return {"ok": False, "error": f"The ER won't see you again for {days_left} more day(s)."}
+        if self.cash < data.ER_VISIT_COST:
+            return {"ok": False, "error": f"The ER costs ${data.ER_VISIT_COST:,} — you can't afford it."}
+        self.cash -= data.ER_VISIT_COST
+        self.life = min(data.STARTING_LIFE, self.life + data.ER_LIFE_GAIN)
+        self.last_er_day = self.day
+        self._log(
+            f"Emergency room visit: paid ${data.ER_VISIT_COST:,} and patched up "
+            f"({data.ER_LIFE_GAIN} half-heart restored)."
+        )
+        return {"ok": True}
+
     def _check_beverage_generosity(self, product_key: str, qty: int) -> None:
         if product_key != data.BEVERAGE_GENEROSITY_PRODUCT:
             return
@@ -386,6 +442,17 @@ class GameState:
             self._evaluate_supply_demand()
         if self.day % data.PRICE_REFRESH_DAYS == 0:
             self._refresh_prices()
+        if (
+            self.day > 0
+            and self.day % data.BEAN_TIER_3_HEAL_INTERVAL_DAYS == 0
+            and self.bean_tier_achieved("tier3")
+            and self.life < data.STARTING_LIFE
+        ):
+            self.life = min(data.STARTING_LIFE, self.life + data.BEAN_TIER_3_HEAL_AMOUNT)
+            self._log(
+                f"Bean Tier 3 perk: a contact checks in on you "
+                f"({data.BEAN_TIER_3_HEAL_AMOUNT} half-heart restored)."
+            )
         if self.level > old_level:
             unlocked = [p for p in data.PRODUCTS if p.unlock_level == self.level]
             names = ", ".join(p.name for p in unlocked) or "new tiers"
@@ -488,9 +555,11 @@ class GameState:
             "inventory": self.inventory,
             "sales_count": self.sales_count,
             "sales_by_airport": self.sales_by_airport,
+            "sales_by_product_airport": self.sales_by_product_airport,
             "sales_since_day": self.sales_since_day,
             "protected_airport": self.protected_airport,
             "price_discount_airport": self.price_discount_airport,
+            "last_er_day": self.last_er_day,
             "notices": self.notices,
             "game_over": self.game_over,
             "win": self.win,
@@ -518,8 +587,12 @@ class GameState:
         state.sales_by_airport = payload.get(
             "sales_by_airport", {a.code: 0 for a in data.AIRPORTS}
         )
+        state.sales_by_product_airport = payload.get(
+            "sales_by_product_airport", {p.key: {} for p in data.PRODUCTS}
+        )
         state.protected_airport = payload.get("protected_airport")
         state.price_discount_airport = payload.get("price_discount_airport")
+        state.last_er_day = payload.get("last_er_day")
         state.sales_since_day = payload["sales_since_day"]
         state.notices = payload["notices"]
         state.game_over = payload["game_over"]
@@ -579,6 +652,26 @@ class GameState:
                 }
             )
         airport_prices = {a.code: self.prices_at(a.code) for a in data.AIRPORTS}
+        er_days_since = None if self.last_er_day is None else self.day - self.last_er_day
+        er_on_cooldown = er_days_since is not None and er_days_since < data.ER_COOLDOWN_DAYS
+        er_days_until_available = (
+            max(0, data.ER_COOLDOWN_DAYS - er_days_since) if er_on_cooldown else 0
+        )
+        er_available = (
+            not self.game_over
+            and self.life < data.STARTING_LIFE
+            and not er_on_cooldown
+            and self.cash >= data.ER_VISIT_COST
+        )
+        bean_tiers = [
+            {
+                "key": tier["key"],
+                "label": tier["label"],
+                "reward": tier["reward"],
+                "achieved": self.bean_tier_achieved(tier["key"]),
+            }
+            for tier in data.BEAN_TIERS
+        ]
         return {
             "cash": self.cash,
             "debt": self.debt,
@@ -592,6 +685,11 @@ class GameState:
             "net_worth": self.net_worth(),
             "net_worth_goal": data.WIN_NET_WORTH,
             "retirement_suggestion_day": data.RETIREMENT_SUGGESTION_DAY,
+            "er_cost": data.ER_VISIT_COST,
+            "er_cooldown_days": data.ER_COOLDOWN_DAYS,
+            "er_days_until_available": er_days_until_available,
+            "er_available": er_available,
+            "bean_tiers": bean_tiers,
             "airports_covered": self.airports_covered(),
             "airports_total": len(data.AIRPORTS),
             "protected_airport": self.protected_airport,

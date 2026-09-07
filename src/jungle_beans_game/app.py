@@ -199,6 +199,14 @@ def api_retire():
     return jsonify({**result, "state": _finalize(game)})
 
 
+@app.post("/api/emergency-room")
+@login_required
+def api_emergency_room():
+    game = get_game()
+    result = game.visit_er()
+    return jsonify({**result, "state": _finalize(game)})
+
+
 @app.post("/api/save")
 @login_required
 def api_save():

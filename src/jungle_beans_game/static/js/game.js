@@ -74,6 +74,8 @@ function soundForNotice(text) {
   if (/shots fired/i.test(text)) return "machine_gun.mp3";
   if (/police seized|border agents/i.test(text)) return "sirens.mp3";
   if (/mobster/i.test(text)) return "la_vita.mp3";
+  if (/emergency room visit/i.test(text)) return "quick_jam.mp3";
+  if (/bean tier unlocked/i.test(text)) return "funk_jam.mp3";
 
   for (const [pattern, sound] of FIELD_BONUS_SOUND) {
     if (pattern.test(text)) return sound;
@@ -208,6 +210,30 @@ function renderHearts(lifeUnits, maxUnits) {
     html += heartSvg(frac);
   }
   return html;
+}
+
+function renderErButton() {
+  const btn = $("er-btn");
+  if (!btn) return;
+  btn.disabled = !state.er_available;
+  if (state.life >= state.life_max) {
+    btn.textContent = "🚑 Emergency Room (full health)";
+  } else if (state.er_days_until_available > 0) {
+    btn.textContent = `🚑 Emergency Room (ready in ${state.er_days_until_available}d)`;
+  } else {
+    btn.textContent = `🚑 Emergency Room ($${state.er_cost.toLocaleString()})`;
+  }
+}
+
+function renderBeanTiers() {
+  const row = $("bean-tier-row");
+  if (!row || !state.bean_tiers) return;
+  const circles = state.bean_tiers
+    .map((t) => `<span class="bean-tier-circle ${t.achieved ? "achieved" : ""}"></span>`)
+    .join("");
+  const current = state.bean_tiers.find((t) => !t.achieved);
+  const label = current ? current.label : "All Bean Tiers unlocked!";
+  row.innerHTML = `<span class="bean-tier-circles">${circles}</span><span class="bean-tier-text">${label}</span>`;
 }
 
 function renderNotices() {
@@ -421,6 +447,7 @@ function render() {
   const debtEl = $("debt-value");
   if (debtEl) debtEl.textContent = `$${state.debt.toLocaleString()}`;
   $("life-hearts").innerHTML = renderHearts(state.life, state.life_max);
+  renderErButton();
   $("day-value").textContent = state.day;
   $("level-value").textContent = `Lvl ${state.level} · ${state.sales_since_day}/${state.sales_per_day} sales today`;
 
@@ -429,6 +456,7 @@ function render() {
   if (state.price_discount_airport === state.location) statusBits.push("🍍 Pineapple Express: prices down 25%");
   $("status-effects").textContent = statusBits.join(" · ");
 
+  renderBeanTiers();
   renderNotices();
   renderAirports();
   renderMarket();
@@ -489,6 +517,12 @@ function wireControls() {
   });
 
   $("reset-btn").addEventListener("click", handleRetire);
+  $("er-btn").addEventListener("click", async () => {
+    const result = await api("/api/emergency-room");
+    applyState(result.state);
+    if (!result.ok) alert(result.error);
+    render();
+  });
   $("overlay-reset-btn").addEventListener("click", handleReset);
   $("overlay-dashboard-btn").addEventListener("click", () => {
     overlayDismissed = true;

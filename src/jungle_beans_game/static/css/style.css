@@ -33,7 +33,7 @@ button, select, input {
 .dashboard {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  grid-template-rows: auto 1fr 1fr 1fr 1fr auto;
+  grid-template-rows: auto 1fr 0.75fr 1.25fr 1fr auto;
   grid-template-areas:
     "logo     notices  airports"
     "market   notices  airports"
@@ -123,13 +123,47 @@ button, select, input {
 .wallet-panel { grid-area: wallet; display: flex; flex-direction: column; justify-content: center; }
 .win-progress { margin: 4px 0 0 0; font-size: 0.72rem; font-style: normal; font-weight: normal; opacity: 0.8; }
 
+.bean-tier-section { margin: 4px 0 0 0; }
+.bean-tier-label { margin: 0 0 3px 0; font-size: 0.78rem; }
+.bean-tier-row { display: flex; align-items: center; gap: 8px; }
+.bean-tier-circles { display: flex; gap: 4px; }
+.bean-tier-circle {
+  width: 13px;
+  height: 13px;
+  min-width: 13px;
+  border-radius: 50%;
+  border: 2px solid var(--maroon);
+  background: var(--cream);
+}
+.bean-tier-circle.achieved { background: var(--maroon); }
+.bean-tier-text {
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: normal;
+}
+
 .covered-badge {
   display: inline-block;
   color: #1f6b2c;
   font-weight: bold;
   margin-right: 3px;
 }
-.life-panel { grid-area: life; display: flex; align-items: center; gap: 12px; }
+.life-panel { grid-area: life; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+.er-btn {
+  flex-basis: 100%;
+  font-family: inherit;
+  font-style: italic;
+  font-weight: 800;
+  font-size: 0.78rem;
+  padding: 4px 10px;
+  border: 2px solid var(--maroon);
+  border-radius: 4px;
+  background: var(--cream);
+  cursor: pointer;
+  align-self: flex-start;
+}
+.er-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .notices-list, .airports-list {
   list-style: none;

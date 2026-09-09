@@ -52,6 +52,12 @@
 .about-panel ol li { margin-bottom: 10px; }
 .about-panel ol li:last-child { margin-bottom: 0; }
 
+.about-credits {
+  text-align: center;
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
 .about-back {
   display: inline-block;
   margin-top: 8px;
